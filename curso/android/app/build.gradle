@@ -1,0 +1,40 @@
+plugins {
+    id "com.android.application"
+    id "kotlin-android"
+    id "dev.flutter.flutter-gradle-plugin"
+}
+
+android {
+    namespace = "com.example.curso"
+    compileSdkVersion 36  // Actualizado a la última versión de SDK (34)
+    ndkVersion = flutter.ndkVersion
+
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_17  // Actualizado a Java 17
+        targetCompatibility = JavaVersion.VERSION_17  // Actualizado a Java 17
+    }
+
+    kotlinOptions {
+        jvmTarget = JavaVersion.VERSION_17.toString()  // Actualizado a Java 17
+    }
+
+    defaultConfig {
+        applicationId = "com.example.curso"
+        minSdkVersion 21  // Mínimo compatible con Flutter
+        targetSdkVersion 34  // Actualizado a la última versión de SDK (34)
+        versionCode = flutter.versionCode
+        versionName = flutter.versionName
+    }
+
+    buildTypes {
+        release {
+            // TODO: Add your own signing config for the release build.
+            // Signing with the debug keys for now, so `flutter run --release` works.
+            signingConfig = signingConfigs.debug
+        }
+    }
+}
+
+flutter {
+    source = "../.."
+}

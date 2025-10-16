@@ -1,0 +1,2 @@
+C:/Users/jonit/OneDrive/Documentos/GitHub/CamarasSeguridadTT/curso/android/app/.cxx/Debug/6sx2i6g5/x86_64/CMakeFiles/edit_cache.dir
+C:/Users/jonit/OneDrive/Documentos/GitHub/CamarasSeguridadTT/curso/android/app/.cxx/Debug/6sx2i6g5/x86_64/CMakeFiles/rebuild_cache.dir
