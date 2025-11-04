@@ -69,6 +69,16 @@ class _IncidenciasState extends State<Incidencias> {
         return AppConstants.orange;
       case EvidenceType.unauthorizedPerson:
         return Colors.red;
+      case EvidenceType.forzadoCerradura:
+        return Colors.red[700]!;
+      case EvidenceType.agresionPuerta:
+        return Colors.red[900]!;
+      case EvidenceType.escaladoVentana:
+        return Colors.orange[700]!;
+      case EvidenceType.arrojamientoObjetos:
+        return Colors.deepOrange;
+      case EvidenceType.vistaProlongada:
+        return Colors.amber[700]!;
     }
   }
 
@@ -78,6 +88,16 @@ class _IncidenciasState extends State<Incidencias> {
         return Icons.person_search;
       case EvidenceType.unauthorizedPerson:
         return Icons.person_off;
+      case EvidenceType.forzadoCerradura:
+        return Icons.lock_open;
+      case EvidenceType.agresionPuerta:
+        return Icons.door_front_door;
+      case EvidenceType.escaladoVentana:
+        return Icons.window;
+      case EvidenceType.arrojamientoObjetos:
+        return Icons.warning;
+      case EvidenceType.vistaProlongada:
+        return Icons.visibility;
     }
   }
 

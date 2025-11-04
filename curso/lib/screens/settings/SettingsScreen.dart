@@ -65,7 +65,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     // Mostrar la pantalla de settings normal
     return Scaffold(
       backgroundColor: const Color(0xFF1E1E2E),
-      body: Padding(
+      body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -81,9 +81,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 widget.onTabChange?.call(4);
               },
             ),
-            
+
             const SizedBox(height: 24),
-            
+
             // Sección Cámaras
             _buildSectionTitle('Cámaras'),
             const SizedBox(height: 12),
@@ -96,9 +96,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 widget.onTabChange?.call(1);
               },
             ),
-            
+
             const SizedBox(height: 24),
-            
+
             // Sección Rostros
             _buildSectionTitle('Rostros'),
             const SizedBox(height: 12),
@@ -107,9 +107,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
               title: 'Gestionar Rostros',
               onTap: _showFaceManagement,
             ),
-            
+
             const SizedBox(height: 24),
-            
+
             // Sección Miembros
             _buildSectionTitle('Miembros'),
             const SizedBox(height: 12),
@@ -118,9 +118,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
               title: 'Gestionar Miembros',
               onTap: _showMemberManagement,
             ),
-            
+
             const SizedBox(height: 24),
-            
+
             // Sección Alertas
             _buildSectionTitle('Alertas'),
             const SizedBox(height: 12),

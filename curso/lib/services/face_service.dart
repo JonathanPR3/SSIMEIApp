@@ -95,17 +95,18 @@ class FaceService {
     required String relationship,
     required String imageUrl,
     required Map<String, dynamic> processingResult,
+    List<String>? savedImagePaths, // Rutas de imágenes guardadas localmente
   }) async {
     // Simular procesamiento de IA
     await Future.delayed(const Duration(milliseconds: 1500));
-    
+
     if (!canAddNewFace()) {
       throw Exception('Máximo de $maxFaces rostros alcanzado');
     }
 
     // Generar keypoints simulados basados en el "processingResult"
     final keypoints = _generateMockKeypoints(processingResult);
-    
+
     final newFace = RegisteredFace(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
       name: name,
@@ -117,6 +118,14 @@ class FaceService {
     );
 
     _registeredFaces.add(newFace);
+
+    // Aquí podrías guardar las rutas de las imágenes para uso futuro
+    // Por ejemplo, en una base de datos local o SharedPreferences
+    if (savedImagePaths != null && savedImagePaths.isNotEmpty) {
+      print('Imágenes guardadas: ${savedImagePaths.length} archivos');
+      print('Primera imagen: ${savedImagePaths.first}');
+    }
+
     return newFace;
   }
 

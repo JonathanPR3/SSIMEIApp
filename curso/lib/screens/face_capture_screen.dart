@@ -3,6 +3,7 @@ import 'package:camera/camera.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:curso/constants/app_constants.dart';
 import 'package:curso/services/face_service.dart';
+import 'package:curso/services/face_storage_service.dart';
 
 class FaceCaptureScreen extends StatefulWidget {
   const FaceCaptureScreen({super.key});
@@ -18,13 +19,17 @@ class _FaceCaptureScreenState extends State<FaceCaptureScreen>
   bool isCompleted = false;
   double confidence = 0.0;
   String currentInstruction = '';
-  
-  // Variables de cámara - AGREGAR ESTAS
+
+  // Variables de cámara
   CameraController? _cameraController;
   List<CameraDescription>? _cameras;
   bool _isCameraInitialized = false;
   bool _permissionGranted = false;
   String? _errorMessage;
+
+  // Almacenamiento de imágenes capturadas
+  final List<XFile> _capturedImages = [];
+  String? _currentFaceId;
   
   late AnimationController _pulseController;
   late AnimationController _progressController;
@@ -43,18 +48,20 @@ class _FaceCaptureScreenState extends State<FaceCaptureScreen>
   void initState() {
     super.initState();
     currentInstruction = steps[0];
-    _initializeCamera(); // AGREGAR ESTA LÍNEA
-    
+    // Generar ID único para este rostro
+    _currentFaceId = DateTime.now().millisecondsSinceEpoch.toString();
+    _initializeCamera();
+
     _pulseController = AnimationController(
       duration: const Duration(seconds: 2),
       vsync: this,
     )..repeat();
-    
+
     _progressController = AnimationController(
       duration: const Duration(milliseconds: 500),
       vsync: this,
     );
-    
+
     _pulseAnimation = Tween<double>(
       begin: 0.8,
       end: 1.2,
@@ -62,7 +69,7 @@ class _FaceCaptureScreenState extends State<FaceCaptureScreen>
       parent: _pulseController,
       curve: Curves.easeInOut,
     ));
-    
+
     _progressAnimation = Tween<double>(
       begin: 0.0,
       end: 1.0,
@@ -139,7 +146,6 @@ class _FaceCaptureScreenState extends State<FaceCaptureScreen>
   }
 
   Future<void> _captureStep() async {
-    // ACTUALIZAR ESTE MÉTODO
     if (_cameraController == null || !_cameraController!.value.isInitialized) {
       _showMessage('Cámara no disponible');
       return;
@@ -153,10 +159,22 @@ class _FaceCaptureScreenState extends State<FaceCaptureScreen>
       // Capturar imagen REAL
       final XFile imageFile = await _cameraController!.takePicture();
       final bytes = await imageFile.readAsBytes();
-      
+
+      // Guardar imagen localmente
+      final savedPath = await FaceStorageService.saveCapturedImage(
+        imageFile: imageFile,
+        faceId: _currentFaceId!,
+        stepNumber: currentStep + 1,
+      );
+
+      // Agregar a la lista de imágenes capturadas
+      _capturedImages.add(imageFile);
+
+      print('✅ Imagen guardada en: $savedPath');
+
       // Procesar con IA (simulado por ahora)
       final result = await FaceService.processFaceCapture(
-        imageData: bytes.toString(), // Convertir a string por compatibilidad
+        imageData: bytes.toString(),
         stepNumber: currentStep + 1,
       );
 
@@ -168,7 +186,7 @@ class _FaceCaptureScreenState extends State<FaceCaptureScreen>
 
         // Animar progreso
         _progressController.animateTo((currentStep + 1) / steps.length);
-        
+
         await Future.delayed(const Duration(milliseconds: 800));
 
         if (currentStep < steps.length - 1) {
@@ -183,11 +201,14 @@ class _FaceCaptureScreenState extends State<FaceCaptureScreen>
           await _completeRegistration();
         }
       } else {
-        // Reintentar
+        // Reintentar - eliminar imagen guardada
+        await FaceStorageService.deleteFaceImages(_currentFaceId!);
+        _capturedImages.clear();
         _showMessage('No se detectó rostro correctamente. Intenta de nuevo.');
       }
     } catch (e) {
-      _showMessage('Error en el procesamiento. Intenta de nuevo.');
+      _showMessage('Error en el procesamiento: $e');
+      print('❌ Error: $e');
     }
 
     setState(() {
@@ -201,28 +222,52 @@ class _FaceCaptureScreenState extends State<FaceCaptureScreen>
       try {
         final name = result['name'];
         final relationship = result['relationship'];
-        
+
         if (name != null && relationship != null && name.isNotEmpty && relationship.isNotEmpty) {
+          // Obtener todas las imágenes guardadas de este rostro
+          final savedImages = await FaceStorageService.getFaceImages(_currentFaceId!);
+          final imagePaths = savedImages.map((file) => file.path).toList();
+
+          print('📸 Total de imágenes capturadas: ${imagePaths.length}');
+          print('📂 Ubicación: ${imagePaths.isNotEmpty ? imagePaths.first : "N/A"}');
+
+          // Preparar datos para envío futuro a API
+          final apiData = FaceStorageService.prepareFaceDataForAPI(
+            faceId: _currentFaceId!,
+            name: name,
+            relationship: relationship,
+            imagePaths: imagePaths,
+          );
+
+          print('📦 Datos preparados para API:');
+          print('   - Face ID: ${apiData['face_id']}');
+          print('   - Nombre: ${apiData['name']}');
+          print('   - Imágenes: ${apiData['images_count']}');
+
+          // Registrar rostro (actualmente en memoria)
           await FaceService.registerFace(
             name: name,
             relationship: relationship,
-            imageUrl: 'captured_face_data',
+            imageUrl: imagePaths.isNotEmpty ? imagePaths.first : 'no_image',
             processingResult: {
               'steps_completed': steps.length,
               'final_confidence': confidence,
               'processing_time': DateTime.now().millisecondsSinceEpoch,
+              'face_id': _currentFaceId,
             },
+            savedImagePaths: imagePaths,
           );
-          
-          _showMessage('Rostro registrado exitosamente');
+
+          _showMessage('Rostro registrado exitosamente con ${imagePaths.length} imágenes');
           await Future.delayed(const Duration(seconds: 2));
           Navigator.pop(context, true);
         } else {
           _showMessage('Por favor completa todos los campos');
         }
-        
+
       } catch (e) {
-        _showMessage('Error al registrar el rostro');
+        _showMessage('Error al registrar el rostro: $e');
+        print('❌ Error en registro: $e');
       }
     }
   }

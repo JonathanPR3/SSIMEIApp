@@ -63,15 +63,11 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     );
 
     if (success) {
-      _showSnackBar('Registro exitoso. Revisa tu email para el código de confirmación.');
-      
-      // CAMBIO: Enviar a pantalla independiente de confirmación
-      Future.delayed(const Duration(milliseconds: 1000), () {
-        Navigator.pushNamed(
-          context,
-          '/confirm-email',
-          arguments: {'email': email},
-        );
+      _showSnackBar('Registro exitoso. Ya puedes iniciar sesión.');
+
+      // NUEVA API: No requiere confirmación de email, ir directo al login
+      Future.delayed(const Duration(milliseconds: 1500), () {
+        Navigator.pushReplacementNamed(context, '/login');
       });
     } else {
       final error = ref.read(authNotifierProvider).errorMessage;

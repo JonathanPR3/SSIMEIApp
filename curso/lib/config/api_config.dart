@@ -3,41 +3,64 @@ class ApiConfig {
   // ==========================================
   // CONFIGURACIÓN DE LA API
   // ==========================================
-  
+
   // 🔧 CAMBIAR SEGÚN TU ENTORNO
   static const String _baseUrlDevelopment = 'http://localhost:8000';
   static const String _baseUrlProduction = 'https://tu-api.com';
-  
+
   // Modo actual (cambiar a false para producción)
   static const bool isDevelopment = true;
-  
+
+  // 🔧 TOGGLE PARA MODO TEST (sin llamadas reales a la API)
+  // Cambia esto a FALSE cuando quieras conectarte a la API real
+  static const bool useMockMode = false;
+
   // URL base según el entorno
   static String get baseUrl => isDevelopment ? _baseUrlDevelopment : _baseUrlProduction;
-  
+
   // ==========================================
-  // ENDPOINTS
+  // ENDPOINTS - ACTUALIZADOS PARA FASTAPI
   // ==========================================
-  
+
   // Authentication
   static const String register = '/auth/register';
   static const String login = '/auth/login';
-  static const String refresh = '/auth/refresh';
   static const String me = '/auth/me';
-  
+
   // Users
   static const String users = '/users';
-  static String userById(String userId) => '/users/$userId';
-  static String changePassword(String userId) => '/users/$userId/change-password';
+  static String userById(int userId) => '/users/$userId';
+  static String changePassword(int userId) => '/users/$userId/change-password';
   static String searchUserByEmail(String email) => '/users/search/$email';
-  
+
   // Organizations
   static const String organizations = '/organizations';
   static const String myOrganization = '/organizations/me';
-  static String organizationById(String orgId) => '/organizations/$orgId';
-  
+  static String organizationById(int orgId) => '/organizations/$orgId';
+
   // Cameras
   static const String cameras = '/cameras';
-  static String cameraById(String cameraId) => '/cameras/$cameraId';
+  static String cameraById(int cameraId) => '/cameras/$cameraId';
+
+  // Invitations
+  static const String invitations = '/invitations';
+  static String acceptInvitation = '/invitations/accept';
+
+  // Join Requests
+  static const String joinRequests = '/join-requests';
+  static String reviewJoinRequest(int requestId) => '/join-requests/$requestId/review';
+
+  // Detections/Incidents
+  static const String incidents = '/api/detection/incidents';
+  static String incidentById(int incidentId) => '/api/detection/incidents/$incidentId';
+  static String acknowledgeIncident(int incidentId) => '/api/detection/incidents/$incidentId/acknowledge';
+  static const String incidentsStats = '/api/detection/incidents/stats/summary';
+  static const String simulationStart = '/api/detection/simulation/start';
+  static const String simulationStop = '/api/detection/simulation/stop';
+  static const String simulationStatus = '/api/detection/simulation/status';
+
+  // WebSocket
+  static String webSocketUrl(String token) => '${baseUrl.replaceAll('http', 'ws')}/ws/notifications?token=$token';
   
   // ==========================================
   // CONFIGURACIÓN DE TIMEOUTS
