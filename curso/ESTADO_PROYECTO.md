@@ -1,8 +1,36 @@
 # 📊 Estado del Proyecto - Sistema de Vigilancia con Detección de Incidentes
 
-**Última actualización:** 2025-11-07
+**Última actualización:** 2025-11-08
 **Proyecto:** App Flutter + FastAPI Backend
 **Tema:** Sistema de seguridad con notificaciones en tiempo real + Gestión de organizaciones
+**Estado actual:** ✅ **FUNCIONAL Y LISTO PARA DEMO** con ngrok
+
+---
+
+## 🚀 NOVEDAD: Despliegue con ngrok (2025-11-08)
+
+### ✅ Configuración Completada
+- ✅ **ngrok instalado y funcionando** - Expone API en URL pública temporal
+- ✅ **Header especial agregado** - `ngrok-skip-browser-warning: true` para plan gratuito
+- ✅ **Probado en dispositivo físico** - Samsung Galaxy Note 10+ (SM-N975F)
+- ✅ **Funciona desde cualquier red** - No requiere estar en la misma WiFi que la laptop
+
+### Configuración Actual en `lib/config/api_config.dart`:
+```dart
+static const String _baseUrlProduction = 'https://mathilda-conventually-esta.ngrok-free.dev';
+static const bool isDevelopment = false; // ← Usando ngrok
+```
+
+### Flujo de Trabajo con ngrok:
+1. **LAPTOP:** Correr API con `uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload`
+2. **LAPTOP:** Correr ngrok con `ngrok http 8000`
+3. **PC desarrollo:** Actualizar URL en `api_config.dart`
+4. **CELULAR:** Instalar APK o conectar vía USB
+5. **DEMO:** Funciona desde cualquier lugar con internet
+
+### Archivos Modificados:
+- `lib/config/api_config.dart` - URL de producción y header ngrok
+- `lib/routes.dart` - Deshabilitada ruta web-only (`AcceptInvitationWebWrapper`)
 
 ---
 
@@ -577,29 +605,39 @@ IMPLEMENTACION_DETECCIONES_GUIDE.md - Guía original (completada)
 - [x] Simulación de incidentes
 - [x] Auto-actualización en tiempo real
 
-**Pendiente UX:**
+**Despliegue y Testing (ACTUALIZADO 2025-11-08):**
+- [x] ✅ **ngrok configurado** - App funciona remotamente desde cualquier red
+- [x] ✅ **Probado en dispositivo físico** - Samsung Galaxy Note 10+ funcionando
+- [x] ✅ **Header ngrok agregado** - Soluciona página de advertencia de ngrok free
+- [x] ✅ **Rutas mobile corregidas** - AcceptInvitationWebWrapper deshabilitado en mobile
+- [ ] Compilar APK release para instalación independiente
+
+**Pendiente UX (Minor Fixes):**
+- [ ] **Ajustes responsive** - Mejorar adaptación a diferentes tamaños de pantalla
+- [ ] **Refinar espaciados** - Mejorar márgenes y padding en listas
 - [ ] Filtros por estado (Pendientes/Revisadas)
-- [ ] Botón "Marcar como revisada"
+- [ ] Botón "Marcar como revisada" más visible
 - [ ] Vista por defecto: solo pendientes
-- [ ] Paginación
+- [ ] Paginación (opcional)
 
-**Pendiente Backend:**
-- [ ] Campos extendidos en BD
+**Pendiente Backend (Opcional):**
+- [ ] Campos extendidos en BD (behavior_type, severity real)
 - [ ] Valores reales (no hardcoded)
-- [ ] Despliegue en servidor
+- [ ] Despliegue permanente en Railway/Render (opcional - actualmente usa ngrok)
 
-**Pendiente Producción:**
+**Pendiente Producción (Futuro):**
 - [ ] Testing exhaustivo
 - [ ] Notificaciones iOS
-- [ ] Modelo de detección real
+- [ ] Modelo de detección real (YOLOv8)
 - [ ] S3 para videos/imágenes
 
 ---
 
-**¿Preguntas para el usuario?**
-- ¿Implementar filtros por estado?
-- ¿Permitir eliminar incidentes o solo filtrar?
-- ¿Desplegar backend en servidor?
-- ¿Prioridad: campos BD reales o UI mejorada?
+**Estado Actual (2025-11-08):**
+- ✅ App completamente funcional en dispositivo físico
+- ✅ Conectada a API remota vía ngrok
+- ✅ Sistema de organizaciones completo
+- ✅ WebSocket funcionando en tiempo real
+- 🎯 **Próximo paso:** Minor fixes UI/UX y compilar APK release
 
-🚀 **El sistema está funcional y listo para demo básico**
+🚀 **El sistema está funcional y listo para demo completo con profesor**

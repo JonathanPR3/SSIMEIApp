@@ -92,8 +92,23 @@ Muestra push notification + SnackBar
 ### Flutter (`lib/config/api_config.dart`)
 ```dart
 static const String _baseUrlDevelopment = 'http://localhost:8000';
-static const bool isDevelopment = true;
+static const String _baseUrlProduction = 'https://mathilda-conventually-esta.ngrok-free.dev';
+static const bool isDevelopment = false; // ← USANDO NGROK para pruebas remotas
+
+// Header especial agregado para ngrok free tier
+static Map<String, String> get defaultHeaders => {
+  'Content-Type': 'application/json',
+  'Accept': 'application/json',
+  'ngrok-skip-browser-warning': 'true', // ← Evita página de advertencia de ngrok
+};
 ```
+
+**⚠️ IMPORTANTE - ngrok Activo:**
+- La app está configurada para conectarse a ngrok (URL pública temporal)
+- **Requiere:** ngrok corriendo en la laptop con `ngrok http 8000`
+- **Requiere:** API corriendo con `uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload`
+- **Ventaja:** Funciona desde cualquier red con internet (no requiere misma WiFi)
+- **Limitación:** La URL de ngrok puede cambiar al reiniciar ngrok
 
 ### Services
 ```dart
@@ -218,25 +233,37 @@ DETECCIONES_IMPLEMENTADAS.md                ← Detalle técnico detecciones
 
 ## 🚧 Pendiente (Opcionales)
 
-### Sistema de Incidentes
-1. **Filtros por estado** en pantalla Incidencias
+### Despliegue y Testing - ESTADO ACTUAL (2025-11-08) ✅
+- ✅ **ngrok configurado** - App funciona remotamente desde cualquier red
+- ✅ **Probado en dispositivo físico** - Samsung SM-N975F funcionando
+- ✅ **Header ngrok agregado** - `ngrok-skip-browser-warning` para plan gratuito
+- ✅ **Ruta mobile corregida** - `AcceptInvitationWebWrapper` deshabilitada (solo web)
+
+### UI/UX - Minor Fixes Pendientes
+1. **Ajustes de diseño responsive**
+   - Mejorar adaptación a diferentes tamaños de pantalla
+   - Refinar espaciados y márgenes
+   - Optimizar visualización de listas largas
+
+2. **Filtros por estado** en pantalla Incidencias
    - Tabs: Pendientes | Revisadas | Todas
    - Vista default: solo pendientes
 
-2. **Botón "Marcar como revisada"** visible en UI
+3. **Botón "Marcar como revisada"** más visible en UI
    - Endpoint ya existe: `POST /incidents/{id}/acknowledge`
-   - Solo falta hacer el botón visible
+   - Solo falta mejorar visibilidad del botón
 
-### Sistema de Organizaciones
-3. **Agregar navegación** - Desde HomeScreen a ManageOrganizationScreen
-4. **Pantalla de unirse** - Para usuarios que reciben invitación (opcional)
-5. **Deep links** - Abrir app con link de invitación (opcional)
-6. **Push notifications** - Cuando llega nueva solicitud (opcional)
+### Sistema de Organizaciones - Mejoras Futuras
+4. **Agregar navegación** - Desde HomeScreen a ManageOrganizationScreen
+5. **Pantalla de unirse** - Para usuarios que reciben invitación (opcional)
+6. **Deep links** - Abrir app con link de invitación (opcional)
+7. **Push notifications** - Cuando llega nueva solicitud (opcional)
 
-### General
-7. **Despliegue**
-   - Backend en servidor real
-   - Actualizar URLs en Flutter
+### Despliegue Permanente (Opcional)
+8. **Despliegue en Railway/Render**
+   - Backend en servidor real permanente
+   - Actualizar URLs en Flutter para producción
+   - Eliminar dependencia de ngrok
 
 ---
 
@@ -297,39 +324,70 @@ Solo mejoras UX opcionales:
 
 ---
 
-## 🎯 Estado del Proyecto: ✅ FUNCIONAL
+## 🎯 Estado del Proyecto: ✅ FUNCIONAL Y LISTO PARA DEMO
 
 **Sistema está listo para:**
 - ✅ Demo básico
 - ✅ Testing con simulación
 - ✅ Pruebas de notificaciones en tiempo real
+- ✅ **Demo remota con ngrok** - Funciona desde cualquier red
+- ✅ **Probado en dispositivo físico** - Samsung Galaxy Note 10+
 
 **Siguiente milestone:**
-- 🔲 Mejorar UX (filtros, botones)
-- 🔲 Desplegar en servidor
-- 🔲 Integrar detección real (YOLOv8)
+- 🎯 **Ajustes UI/UX** - Mejorar responsive y espaciados
+- 🔲 Compilar APK release para instalación independiente
+- 🔲 Mejorar filtros y botones de acciones
+- 🔲 (Opcional) Desplegar en servidor permanente
+- 🔲 (Opcional) Integrar detección real (YOLOv8)
 
 ---
 
 ## 📞 Comandos Útiles
 
 ```bash
-# Backend
-cd vigilancia-api && venv\Scripts\activate && uvicorn app.main:app --reload
+# Backend (LAPTOP - Puerto debe estar en 0.0.0.0 para ngrok)
+cd vigilancia-api && venv\Scripts\activate && uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 
-# Flutter
+# ngrok (LAPTOP - En otra terminal)
+ngrok http 8000
+# Copia la URL https que te da (ej: https://mathilda-conventually-esta.ngrok-free.dev)
+# Actualiza lib/config/api_config.dart con esa URL en _baseUrlProduction
+
+# Flutter (PC de desarrollo)
 cd curso && flutter run
+
+# Compilar APK release
+flutter build apk --release
+# APK estará en: build/app/outputs/flutter-apk/app-release.apk
 
 # Hot reload Flutter
 r (en terminal de Flutter)
 
 # Detener simulación
 curl -X POST "http://localhost:8000/api/detection/simulation/stop" -H "Authorization: Bearer TOKEN"
+
+# Git - Subir cambios
+git add .
+git commit -m "Descripción de cambios"
+git push origin main
 ```
+
+### Flujo para Demo con ngrok:
+1. **En LAPTOP:** Iniciar API con `--host 0.0.0.0`
+2. **En LAPTOP:** Iniciar ngrok con `ngrok http 8000`
+3. **En PC de desarrollo:** Actualizar `api_config.dart` con URL de ngrok
+4. **En PC de desarrollo:** Compilar APK o correr `flutter run`
+5. **En CELULAR:** Instalar APK o conectar vía USB para testing
 
 ---
 
-**Última actualización:** 2025-11-07
-**Última implementación:** Sistema completo de Gestión de Organizaciones con tabs
-**Próxima tarea sugerida:** Agregar navegación desde HomeScreen a ManageOrganizationScreen
+**Última actualización:** 2025-11-08
+**Última implementación:**
+- Configuración de ngrok para demo remota
+- Header `ngrok-skip-browser-warning` agregado
+- Corrección de rutas para mobile (deshabilitado AcceptInvitationWebWrapper)
+- Probado exitosamente en Samsung Galaxy Note 10+ (SM-N975F)
+
+**Estado actual:** ✅ App funcional en dispositivo físico con API remota vía ngrok
+**Próxima tarea sugerida:** Minor fixes UI/UX y compilar APK release para demo
 **Documentación completa:** Ver `IMPLEMENTACION_ORGANIZACIONES_COMPLETA.md`

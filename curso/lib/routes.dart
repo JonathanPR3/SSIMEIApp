@@ -12,16 +12,6 @@ import 'package:curso/screens/registros_actividad.dart';
 import 'package:curso/screens/auth/confirm_email_screen.dart';
 import 'package:curso/screens/settings/SettingsScreen.dart';
 import 'package:curso/screens/organization/manage_organization_screen.dart';
-import 'package:curso/screens/organization/accept_invitation_screen.dart';
-
-
-
-
-
-
-// Importar wrapper solo en web
-import 'package:curso/screens/organization/accept_invitation_web_wrapper.dart'
-    if (dart.library.io) 'package:curso/screens/organization/accept_invitation_screen.dart';
 
 final Map<String, WidgetBuilder> appRoutes = {
   '/welcome': (context) => const WelcomeScreen(),
@@ -39,6 +29,7 @@ final Map<String, WidgetBuilder> appRoutes = {
   '/settings': (context) => const SettingsScreen(),
   '/manage-organization': (context) => const ManageOrganizationScreen(),
 
-  // Ruta para aceptar invitaciones (funciona en web con query params)
-  '/accept-invite': (context) => const AcceptInvitationWebWrapper(),
+  // NOTA: La ruta '/accept-invite' está deshabilitada en mobile porque
+  // AcceptInvitationWebWrapper usa dart:html (solo funciona en web).
+  // Para mobile, las invitaciones se manejan mediante navegación programática.
 };
