@@ -6,10 +6,10 @@ class ApiConfig {
 
   // 🔧 CAMBIAR SEGÚN TU ENTORNO
   static const String _baseUrlDevelopment = 'http://localhost:8000';
-  static const String _baseUrlProduction = 'https://tu-api.com';
+  static const String _baseUrlProduction = 'https://mathilda-conventually-esta.ngrok-free.dev';
 
   // Modo actual (cambiar a false para producción)
-  static const bool isDevelopment = true;
+  static const bool isDevelopment = false;
 
   // 🔧 TOGGLE PARA MODO TEST (sin llamadas reales a la API)
   // Cambia esto a FALSE cuando quieras conectarte a la API real
@@ -76,6 +76,7 @@ class ApiConfig {
   static Map<String, String> get defaultHeaders => {
     'Content-Type': 'application/json',
     'Accept': 'application/json',
+    'ngrok-skip-browser-warning': 'true', // Necesario para ngrok free tier
   };
   
   static Map<String, String> authHeaders(String token) => {

@@ -156,8 +156,8 @@ class ApiAuthService {
         // Convertir respuesta de API a modelo User de Flutter
         final user = _buildUserFromApiResponse(userData);
 
-        // Guardar usuario en SharedPreferences
-        await _saveUserData(user);
+        // Guardar usuario en SharedPreferences (preservando datos del backend)
+        await _saveUserData(user, backendData: userData);
 
         print('✅ Login exitoso: ${user.nombreCompleto}');
 
@@ -449,13 +449,23 @@ Future<AuthResult> confirmPassword({
   }
   
   /// Guardar datos del usuario en SharedPreferences
-  Future<void> _saveUserData(User user) async {
+  Future<void> _saveUserData(User user, {Map<String, dynamic>? backendData}) async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(
-      AppConstants.userDataKey,
-      json.encode(user.toJson()),
-    );
-    print('💾 Datos de usuario guardados');
+
+    // Si tenemos datos del backend, guardarlos también para preservar campos como 'role'
+    if (backendData != null) {
+      await prefs.setString(
+        AppConstants.userDataKey,
+        json.encode(backendData),
+      );
+      print('💾 Datos de usuario guardados (con datos del backend)');
+    } else {
+      await prefs.setString(
+        AppConstants.userDataKey,
+        json.encode(user.toJson()),
+      );
+      print('💾 Datos de usuario guardados');
+    }
   }
   
   /// Obtener datos del usuario de SharedPreferences

@@ -50,6 +50,7 @@ class AppConstants {
   static const String homeRoute = '/home';
   static const String camerasRoute = '/cameras';
   static const String incidentsRoute = '/incidents';
+  static const String manageOrganizationRoute = '/manage-organization';
   
   // Storage Keys
   static const String userDataKey = 'user_data';

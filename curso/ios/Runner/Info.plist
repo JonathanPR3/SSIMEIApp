@@ -45,5 +45,26 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+
+	<!-- Deep Links: URL Schemes -->
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLName</key>
+			<string>com.ssimei.app</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>ssimei</string>
+			</array>
+		</dict>
+	</array>
+
+	<!-- Deep Links: Universal Links (HTTPS) -->
+	<key>com.apple.developer.associated-domains</key>
+	<array>
+		<string>applinks:ssimei.app</string>
+	</array>
 </dict>
 </plist>

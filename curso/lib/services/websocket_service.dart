@@ -13,6 +13,10 @@ class WebSocketService {
   final _incidentController = StreamController<EvidenceModel>.broadcast();
   Stream<EvidenceModel> get incidentStream => _incidentController.stream;
 
+  // Stream controller para notificaciones de cambios en organización
+  final _orgChangeController = StreamController<Map<String, dynamic>>.broadcast();
+  Stream<Map<String, dynamic>> get orgChangeStream => _orgChangeController.stream;
+
   bool _isConnected = false;
   bool get isConnected => _isConnected;
 
@@ -69,6 +73,21 @@ class WebSocketService {
       } else if (json['type'] == 'incident_update') {
         // Actualización de incidente existente
         print('🔄 Actualización de incidente: ${json['data']}');
+      } else if (json['type'] == 'organization_removed') {
+        // Usuario fue removido de la organización
+        print('⚠️ USUARIO REMOVIDO DE ORGANIZACIÓN');
+        _orgChangeController.add({
+          'action': 'removed',
+          'message': json['message'] ?? 'Has sido removido de la organización',
+        });
+      } else if (json['type'] == 'organization_updated') {
+        // Cambios en la organización (rol cambiado, etc)
+        print('🔄 ORGANIZACIÓN ACTUALIZADA');
+        _orgChangeController.add({
+          'action': 'updated',
+          'message': json['message'] ?? 'Tu organización ha sido actualizada',
+          'data': json['data'],
+        });
       } else if (json['type'] == 'ping') {
         // Keep-alive ping
         print('💓 Ping recibido');
@@ -89,6 +108,7 @@ class WebSocketService {
   void dispose() {
     disconnect();
     _incidentController.close();
+    _orgChangeController.close();
   }
 }
 

@@ -1,12 +1,12 @@
 # 📊 Estado del Proyecto - Sistema de Vigilancia con Detección de Incidentes
 
-**Última actualización:** 2025-01-03
+**Última actualización:** 2025-11-07
 **Proyecto:** App Flutter + FastAPI Backend
-**Tema:** Sistema de seguridad con notificaciones en tiempo real
+**Tema:** Sistema de seguridad con notificaciones en tiempo real + Gestión de organizaciones
 
 ---
 
-## ✅ COMPLETADO (100%)
+## ✅ COMPLETADO
 
 ### 1. Autenticación y Login
 - ✅ Login con JWT
@@ -185,6 +185,85 @@ ws://localhost:8000/ws/notifications?token={token}
 
 ---
 
+### 6. Sistema de Gestión de Organizaciones ✅ **NUEVO 2025-11-07**
+
+#### 6.1 Modelos de Datos ✅
+- ✅ `Organization` - Modelo de organización con miembros
+- ✅ `OrganizationMember` - Modelo de miembro con rol (ADMIN/USER)
+- ✅ `Invitation` - Modelo de invitación con token y link
+- ✅ `InvitationVerification` - Verificar validez de invitación
+- ✅ `JoinRequest` - Modelo de solicitud de unión
+
+**Archivos:**
+- `lib/models/organization_model.dart`
+- `lib/models/invitation_model.dart`
+- `lib/models/join_request_model.dart`
+
+#### 6.2 Servicios ✅
+- ✅ `OrganizationService` - CRUD de organizaciones
+  - `getMyOrganization()` - Obtener org con miembros
+  - `removeUser(userId)` - Eliminar miembro (solo Admin)
+  - `transferOwnership(newAdminId)` - Transferir administración
+  - `leaveOrganization()` - Salir de la org
+- ✅ `InvitationService` - CRUD de invitaciones
+  - `createInvitation({expiresInMinutes})` - Crear link universal
+  - `verifyInvitation(token)` - Verificar validez (público)
+  - `listInvitations()` - Listar todas (Admin)
+  - `revokeInvitation(id)` - Revocar invitación
+  - `getActiveInvitations()` - Filtrar activas
+- ✅ `JoinRequestService` - CRUD de solicitudes
+  - `createJoinRequest({token, message})` - Crear solicitud
+  - `getMyRequests()` - Mis solicitudes
+  - `getPendingRequests()` - Pendientes (Admin)
+  - `getAllRequests()` - Todas (Admin)
+  - `reviewRequest({id, approved, notes})` - Aprobar/Rechazar
+  - `approveRequest(id)` - Helper aprobar
+  - `rejectRequest(id)` - Helper rechazar
+
+**Archivos:**
+- `lib/services/organization_service.dart`
+- `lib/services/invitation_service.dart`
+- `lib/services/join_request_service.dart`
+
+#### 6.3 UI/Pantallas ✅
+- ✅ `ManageOrganizationScreen` - Pantalla principal con 3 tabs
+  - **Tab 1: Miembros**
+    - Header con estadísticas (Total, Admins, Users)
+    - Lista de miembros con avatar, rol, email
+    - Badge ADMIN con estrella
+    - Eliminar usuarios USER (no Admin)
+    - Pull to refresh
+  - **Tab 2: Invitaciones** (solo ADMIN)
+    - Botón "Crear Nueva Invitación"
+    - Lista de invitaciones activas y expiradas
+    - Copiar link al portapapeles
+    - Contador de tiempo hasta expiración
+    - Revocar invitación
+    - Contador de invitaciones activas
+  - **Tab 3: Solicitudes** (solo ADMIN)
+    - Sección de solicitudes pendientes
+    - Sección de historial (aprobadas/rechazadas)
+    - Botones Aprobar/Rechazar
+    - Mostrar mensaje del solicitante
+    - Badge de estado
+
+**Archivos:**
+- `lib/screens/organization/manage_organization_screen.dart`
+
+#### 6.4 Funcionalidades Extra ✅
+- ✅ Badge de notificaciones en AppBar (muestra solicitudes pendientes)
+- ✅ Botón refresh en AppBar
+- ✅ Loading states en todas las operaciones
+- ✅ Dialogs de confirmación para acciones críticas
+- ✅ SnackBars con feedback
+- ✅ Permisos basados en rol (ADMIN vs USER)
+- ✅ Manejo completo de errores
+- ✅ Estados vacíos informativos
+- ✅ Pull to refresh en todos los tabs
+- ✅ Dark theme consistente
+
+---
+
 ## 🟡 PARCIALMENTE COMPLETADO
 
 ### 1. Gestión de Incidentes - Filtrado y Estados
@@ -210,7 +289,20 @@ ws://localhost:8000/ws/notifications?token={token}
 
 ## ❌ PENDIENTE / NO IMPLEMENTADO
 
-### 1. Eliminación de Incidentes
+### 1. Sistema de Organizaciones - Mejoras Opcionales
+**Estado:** Funcional, faltan solo mejoras UX
+
+**Pendiente:**
+- ⚠️ Agregar navegación desde HomeScreen
+- ⚠️ Pantalla de "Unirse con Token" para usuarios que reciben invitación
+- ⚠️ Deep links para abrir app con link de invitación
+- ⚠️ Push notifications cuando llega nueva solicitud
+
+**Decisión:** Sistema funcional completo, solo faltan mejoras opcionales
+
+---
+
+### 2. Eliminación de Incidentes
 **Estado:** No implementado (diseño pendiente)
 
 **Opciones a considerar:**
@@ -221,7 +313,7 @@ ws://localhost:8000/ws/notifications?token={token}
 
 ---
 
-### 2. Campos Extendidos en BD
+### 3. Campos Extendidos en BD
 **Estado:** Backend devuelve valores hardcodeados
 
 **Campos que faltan en tabla `incidents`:**
@@ -242,7 +334,7 @@ ws://localhost:8000/ws/notifications?token={token}
 
 ---
 
-### 3. Despliegue
+### 4. Despliegue
 **Estado:** Todo corriendo en localhost
 
 **Pendiente:**
@@ -253,7 +345,7 @@ ws://localhost:8000/ws/notifications?token={token}
 
 ---
 
-### 4. Notificaciones iOS
+### 5. Notificaciones iOS
 **Estado:** Solo Android configurado
 
 **Pendiente:**
@@ -263,7 +355,7 @@ ws://localhost:8000/ws/notifications?token={token}
 
 ---
 
-### 5. Pruebas con Cámaras Reales
+### 6. Pruebas con Cámaras Reales
 **Estado:** Solo simulación probada
 
 **Pendiente:**
@@ -293,6 +385,13 @@ flutter run
 - Usuario: `jonitopera777@gmail.com`
 - Organización: 3
 - Cámara disponible: ID 2
+- Rol: ADMIN (puede ver toda la gestión de organizaciones)
+
+### 3.5 Probar Sistema de Organizaciones
+- Navegar a "Gestión de Organización" (necesitas agregar navegación desde HomeScreen)
+- **Tab Miembros**: Ver lista de miembros
+- **Tab Invitaciones**: Crear invitación → Copiar link
+- **Tab Solicitudes**: Ver solicitudes pendientes (si las hay)
 
 ### 4. Iniciar Simulación (Generar Incidentes)
 ```bash

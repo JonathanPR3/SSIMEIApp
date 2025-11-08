@@ -1,6 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'dart:convert';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:curso/screens/manage_faces_screen.dart';
-import 'package:curso/screens/manage_members_screen.dart';
+import 'package:curso/screens/organization/manage_organization_screen.dart';
+import 'package:curso/services/invitation_service.dart';
+import 'package:curso/constants/app_constants.dart';
 
 
 
@@ -45,6 +50,285 @@ class _SettingsScreenState extends State<SettingsScreen> {
     });
   }
 
+  Future<void> _showJoinWithTokenDialog() async {
+    final TextEditingController tokenController = TextEditingController();
+    final mainContext = context; // Capturar el contexto principal del SettingsScreen
+
+    return showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: const Color(0xFF2A2A3E),
+        title: Row(
+          children: [
+            Icon(Icons.vpn_key, color: AppConstants.primaryBlue),
+            const SizedBox(width: 12),
+            const Text(
+              'Unirse con Token',
+              style: TextStyle(color: Colors.white),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Pega el token de invitación que recibiste:',
+              style: TextStyle(color: Colors.white70, fontSize: 14),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: tokenController,
+              style: const TextStyle(color: Colors.white),
+              maxLines: 3,
+              decoration: InputDecoration(
+                hintText: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
+                hintStyle: TextStyle(color: Colors.white38, fontSize: 12),
+                filled: true,
+                fillColor: const Color(0xFF1E1E2E),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: BorderSide.none,
+                ),
+                suffixIcon: IconButton(
+                  icon: const Icon(Icons.paste, color: Colors.white54),
+                  onPressed: () async {
+                    final clipboardData = await Clipboard.getData('text/plain');
+                    if (clipboardData != null) {
+                      tokenController.text = clipboardData.text ?? '';
+                    }
+                  },
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: AppConstants.orange.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: AppConstants.orange.withOpacity(0.3),
+                  width: 1,
+                ),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.info_outline, color: AppConstants.orange, size: 18),
+                  const SizedBox(width: 8),
+                  const Expanded(
+                    child: Text(
+                      'Este token te permite unirte a una organización',
+                      style: TextStyle(
+                        color: Colors.white70,
+                        fontSize: 11,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Cancelar'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              final token = tokenController.text.trim();
+
+              if (token.isEmpty) {
+                ScaffoldMessenger.of(dialogContext).showSnackBar(
+                  const SnackBar(
+                    content: Text('Por favor ingresa un token'),
+                    backgroundColor: Colors.red,
+                  ),
+                );
+                return;
+              }
+
+              // Cerrar diálogo de input
+              Navigator.pop(dialogContext);
+
+              // Mostrar loading usando el contexto principal
+              showDialog(
+                context: mainContext,
+                barrierDismissible: false,
+                builder: (loadingContext) => const Center(
+                  child: CircularProgressIndicator(),
+                ),
+              );
+
+              try {
+                // Aceptar invitación
+                final result = await InvitationService.acceptInvitation(token);
+
+                // Cerrar loading
+                Navigator.of(mainContext).pop();
+
+                // Mostrar diálogo de éxito
+                if (!mounted) return;
+
+                final orgName = result['organization']?['name'] ?? 'la organización';
+
+                showDialog(
+                  context: mainContext,
+                  barrierDismissible: false,
+                  builder: (successContext) => AlertDialog(
+                      backgroundColor: const Color(0xFF2A2A3E),
+                      title: Row(
+                        children: [
+                          Icon(Icons.check_circle, color: AppConstants.primaryBlue, size: 32),
+                          const SizedBox(width: 12),
+                          const Expanded(
+                            child: Text(
+                              '¡Invitación Aceptada!',
+                              style: TextStyle(color: Colors.white),
+                            ),
+                          ),
+                        ],
+                      ),
+                      content: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Te has unido exitosamente a $orgName',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 15,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                          const SizedBox(height: 20),
+                          Container(
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: AppConstants.orange.withOpacity(0.15),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: AppConstants.orange.withOpacity(0.4),
+                                width: 1.5,
+                              ),
+                            ),
+                            child: Column(
+                              children: [
+                                Row(
+                                  children: [
+                                    Icon(Icons.info_outline, color: AppConstants.orange, size: 24),
+                                    const SizedBox(width: 12),
+                                    const Expanded(
+                                      child: Text(
+                                        'Acción requerida',
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 12),
+                                const Text(
+                                  'Para que los cambios se reflejen correctamente, debes cerrar sesión e iniciar sesión nuevamente.',
+                                  style: TextStyle(
+                                    color: Colors.white70,
+                                    fontSize: 13,
+                                    height: 1.4,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                      actions: [
+                        ElevatedButton.icon(
+                          onPressed: () async {
+                            Navigator.pop(successContext); // Cerrar diálogo
+
+                            // Mostrar loading breve
+                            showDialog(
+                              context: mainContext,
+                              barrierDismissible: false,
+                              builder: (context) => const Center(
+                                child: CircularProgressIndicator(),
+                              ),
+                            );
+
+                            // Cerrar sesión
+                            final prefs = await SharedPreferences.getInstance();
+                            await prefs.clear();
+
+                            // Pequeña pausa para que se vea el loading
+                            await Future.delayed(const Duration(milliseconds: 500));
+
+                            // Navegar a login
+                            if (mounted) {
+                              Navigator.of(mainContext).pop(); // Cerrar loading
+                              Navigator.of(mainContext).pushNamedAndRemoveUntil(
+                                '/login',
+                                (route) => false,
+                              );
+                            }
+                          },
+                          icon: const Icon(Icons.logout, size: 20),
+                          label: const Text('Cerrar Sesión e Iniciar de Nuevo'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppConstants.primaryBlue,
+                            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+              } catch (e) {
+                Navigator.pop(mainContext); // Cerrar loading
+
+                // Mostrar error
+                if (mounted) {
+                  showDialog(
+                    context: mainContext,
+                    builder: (context) => AlertDialog(
+                      backgroundColor: const Color(0xFF2A2A3E),
+                      title: Row(
+                        children: [
+                          Icon(Icons.error, color: AppConstants.error),
+                          const SizedBox(width: 12),
+                          const Text(
+                            'Error',
+                            style: TextStyle(color: Colors.white),
+                          ),
+                        ],
+                      ),
+                      content: Text(
+                        e.toString().replaceAll('Exception: ', ''),
+                        style: const TextStyle(color: Colors.white70),
+                      ),
+                      actions: [
+                        ElevatedButton(
+                          onPressed: () => Navigator.pop(context),
+                          child: const Text('OK'),
+                        ),
+                      ],
+                    ),
+                  );
+                }
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppConstants.primaryBlue,
+            ),
+            child: const Text('Unirse'),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     // Si está mostrando gestión de rostros, mostrar esa pantalla
@@ -56,10 +340,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
     // Si está mostrando gestión de miembros, mostrar esa pantalla
     if (_showingMemberManagement) {
-      return ManageMembersScreen(
+      return ManageOrganizationScreen(
         onBack: _hideMemberManagement,
       );
-
     }
 
     // Mostrar la pantalla de settings normal
@@ -117,6 +400,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
               icon: Icons.people_outline,
               title: 'Gestionar Miembros',
               onTap: _showMemberManagement,
+            ),
+
+            const SizedBox(height: 12),
+
+            // Unirse con token (para desarrollo web)
+            _buildSettingsCard(
+              icon: Icons.vpn_key,
+              title: 'Unirse con Token de Invitación',
+              onTap: _showJoinWithTokenDialog,
             ),
 
             const SizedBox(height: 24),

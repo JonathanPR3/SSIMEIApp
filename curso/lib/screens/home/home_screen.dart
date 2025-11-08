@@ -32,6 +32,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       FlutterLocalNotificationsPlugin();
 
   StreamSubscription<EvidenceModel>? _incidentSubscription;
+  StreamSubscription<Map<String, dynamic>>? _orgChangeSubscription;
 
   @override
   void initState() {
@@ -44,6 +45,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   @override
   void dispose() {
     _incidentSubscription?.cancel();
+    _orgChangeSubscription?.cancel();
     webSocketService.disconnect();
     super.dispose();
   }
@@ -143,6 +145,96 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         );
       }
     });
+
+    // Escuchar cambios en la organización (remover usuario, etc)
+    _orgChangeSubscription = webSocketService.orgChangeStream.listen((change) {
+      print('⚠️ Cambio en organización: ${change['action']}');
+
+      if (change['action'] == 'removed' && mounted) {
+        // Usuario fue removido de la organización
+        _handleUserRemoved(change['message'] as String);
+      } else if (change['action'] == 'updated' && mounted) {
+        // Organización actualizada (rol cambiado, etc)
+        _handleOrgUpdated(change);
+      }
+    });
+  }
+
+  /// Manejar cuando el usuario es removido de la organización
+  Future<void> _handleUserRemoved(String message) async {
+    print('🚨 USUARIO REMOVIDO - Cerrando sesión...');
+
+    // Mostrar diálogo informativo
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF2A2A3E),
+        title: Row(
+          children: [
+            Icon(Icons.info_outline, color: AppConstants.orange, size: 32),
+            const SizedBox(width: 12),
+            const Expanded(
+              child: Text(
+                'Acceso Revocado',
+                style: TextStyle(color: Colors.white),
+              ),
+            ),
+          ],
+        ),
+        content: Text(
+          message,
+          style: const TextStyle(color: Colors.white70, fontSize: 15),
+        ),
+        actions: [
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.pop(context); // Cerrar diálogo
+
+              // Cerrar sesión usando el provider
+              await ref.read(authNotifierProvider.notifier).logout();
+
+              // Navegar a login
+              if (mounted) {
+                Navigator.of(context).pushNamedAndRemoveUntil(
+                  '/login',
+                  (route) => false,
+                );
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppConstants.primaryBlue,
+            ),
+            child: const Text('Entendido'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Manejar cuando la organización se actualiza (cambio de rol, etc)
+  void _handleOrgUpdated(Map<String, dynamic> change) {
+    print('🔄 Organización actualizada');
+
+    if (mounted) {
+      // Mostrar mensaje y recargar datos
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(change['message'] as String),
+          backgroundColor: AppConstants.orange,
+          duration: const Duration(seconds: 4),
+          action: SnackBarAction(
+            label: 'Recargar',
+            textColor: Colors.white,
+            onPressed: () {
+              // Recargar la sesión para obtener datos actualizados
+              ref.read(authNotifierProvider.notifier).initialize();
+              _loadHomeData();
+            },
+          ),
+        ),
+      );
+    }
   }
 
   /// Mostrar notificación local cuando llega un nuevo incidente

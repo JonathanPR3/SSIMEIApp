@@ -3,26 +3,32 @@ import 'package:flutter/material.dart';
 import 'package:curso/screens/auth/welcome_screen.dart';
 import 'package:curso/screens/auth/login_screen.dart';
 import 'package:curso/screens/auth/register_screen.dart';
-import 'package:curso/screens/auth/forgot_password_screen.dart'; 
-import 'package:curso/screens/auth/reset_password_screen.dart'; 
+import 'package:curso/screens/auth/forgot_password_screen.dart';
+import 'package:curso/screens/auth/reset_password_screen.dart';
 import 'package:curso/screens/home/user_profile.dart';
 import 'package:curso/screens/gestion_camaras.dart';
 import 'package:curso/screens/incidencias.dart';
 import 'package:curso/screens/registros_actividad.dart';
 import 'package:curso/screens/auth/confirm_email_screen.dart';
 import 'package:curso/screens/settings/SettingsScreen.dart';
+import 'package:curso/screens/organization/manage_organization_screen.dart';
+import 'package:curso/screens/organization/accept_invitation_screen.dart';
 
 
 
 
 
+
+// Importar wrapper solo en web
+import 'package:curso/screens/organization/accept_invitation_web_wrapper.dart'
+    if (dart.library.io) 'package:curso/screens/organization/accept_invitation_screen.dart';
 
 final Map<String, WidgetBuilder> appRoutes = {
   '/welcome': (context) => const WelcomeScreen(),
   '/login': (context) => const LoginScreen(),
   '/register': (context) => const RegisterScreen(),
-  '/forgot-password': (context) => const ForgotPasswordScreen(), 
-  '/reset-password': (context) => const ResetPasswordScreen(), 
+  '/forgot-password': (context) => const ForgotPasswordScreen(),
+  '/reset-password': (context) => const ResetPasswordScreen(),
 
   '/home': (context) => const HomeScreen(),
   '/gestion_camaras': (context) => const GestionCamaras(),
@@ -30,6 +36,9 @@ final Map<String, WidgetBuilder> appRoutes = {
   '/registros_actividad': (context) => const RegistrosActividad(),
   '/perfil_usuario': (context) => const UserProfileScreen(),
   '/confirm-email': (context) => const ConfirmEmailScreen(),
-  '/settings': (context) => const SettingsScreen(), 
+  '/settings': (context) => const SettingsScreen(),
+  '/manage-organization': (context) => const ManageOrganizationScreen(),
 
+  // Ruta para aceptar invitaciones (funciona en web con query params)
+  '/accept-invite': (context) => const AcceptInvitationWebWrapper(),
 };

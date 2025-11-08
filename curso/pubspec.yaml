@@ -60,6 +60,9 @@ dependencies:
   # WebSocket para notificaciones en tiempo real
   web_socket_channel: ^2.4.0
 
+  # Deep Links
+  app_links: ^6.3.2
+
 dev_dependencies:
   build_runner: ^2.4.6
   riverpod_generator: ^2.2.5
