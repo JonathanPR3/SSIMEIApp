@@ -27,6 +27,15 @@ class ApiConfig {
   static const String login = '/auth/login';
   static const String me = '/auth/me';
 
+  // Email Verification - NUEVO 2025-11-13
+  static const String verifyEmail = '/auth/verify-email';
+  static const String resendVerification = '/auth/resend-verification';
+
+  // Password Recovery - NUEVO 2025-11-13
+  static const String forgotPassword = '/auth/forgot-password';
+  static const String verifyResetCode = '/auth/verify-reset-code';
+  static const String resetPassword = '/auth/reset-password';
+
   // Users
   static const String users = '/users';
   static String userById(int userId) => '/users/$userId';

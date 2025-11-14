@@ -63,11 +63,15 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     );
 
     if (success) {
-      _showSnackBar('Registro exitoso. Ya puedes iniciar sesión.');
+      _showSnackBar('Registro exitoso. Verifica tu correo electrónico.');
 
-      // NUEVA API: No requiere confirmación de email, ir directo al login
+      // NUEVO FLUJO: Navegar a pantalla de confirmación de email
       Future.delayed(const Duration(milliseconds: 1500), () {
-        Navigator.pushReplacementNamed(context, '/login');
+        Navigator.pushNamed(
+          context,
+          AppConstants.confirmEmailRoute,
+          arguments: {'email': email},
+        );
       });
     } else {
       final error = ref.read(authNotifierProvider).errorMessage;
@@ -180,7 +184,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   void _goToConfirmation(String email) {
     Navigator.pushNamed(
       context,
-      '/confirm-email',
+      AppConstants.confirmEmailRoute,
       arguments: {'email': email},
     );
   }

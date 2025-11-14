@@ -1,6 +1,6 @@
 # 📡 Endpoints Disponibles en la API - Estado de Integración
 
-**Fecha:** 2025-11-07
+**Fecha:** 2025-11-13 (Última actualización)
 **Backend:** FastAPI v3.0.0
 **URL Base:** http://localhost:8000
 
@@ -12,11 +12,19 @@
 - ✅ `POST /auth/register` - Registro de usuario
 - ✅ `POST /auth/login` - Inicio de sesión
 - ✅ `GET /auth/me` - Información del usuario actual
+- ✅ `POST /auth/verify-email` - Verificar código de email ⭐ IMPLEMENTADO 2025-11-13
+- ✅ `POST /auth/resend-verification` - Reenviar código de verificación ⭐ IMPLEMENTADO 2025-11-13
+- ✅ `POST /auth/forgot-password` - Solicitar código de recuperación ⭐ IMPLEMENTADO 2025-11-13
+- ✅ `POST /auth/verify-reset-code` - Verificar código de recuperación ⭐ IMPLEMENTADO 2025-11-13
+- ✅ `POST /auth/reset-password` - Restablecer contraseña ⭐ IMPLEMENTADO 2025-11-13
 
 **Archivos Flutter:**
 - `lib/services/api_auth_service.dart`
 - `lib/screens/auth/login_screen.dart`
 - `lib/screens/auth/register_screen.dart`
+- `lib/screens/auth/confirm_email_screen.dart` ⭐ Email verification
+- `lib/screens/auth/forgot_password_screen.dart` ⭐ Password recovery
+- `lib/screens/auth/reset_password_screen.dart` ⭐ Password reset
 
 ---
 

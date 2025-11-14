@@ -179,13 +179,21 @@ class EvidenceService {
       final uri = Uri.parse('${ApiConfig.baseUrl}${ApiConfig.incidents}');
       final uriWithQuery = uri.replace(queryParameters: queryParams.map((key, value) => MapEntry(key, value.toString())));
 
-      final response = await _apiService.get<List<dynamic>>(
+      // Cambiar el tipo genérico a Map<String, dynamic> en lugar de List<dynamic>
+      final response = await _apiService.get<Map<String, dynamic>>(
         uriWithQuery.toString().replaceAll(ApiConfig.baseUrl, ''),
         requiresAuth: true,
       );
 
       if (response.isSuccess && response.data != null) {
-        final incidents = response.data!
+        // El backend ahora devuelve: {"incidents": [...], "total": 0, ...}
+        // Extraer el array de incidentes
+        final jsonData = response.data!;
+        final List<dynamic> incidentsData = jsonData is List
+            ? jsonData
+            : (jsonData['incidents'] ?? []);
+
+        final incidents = incidentsData
             .map((json) => EvidenceModel.fromJson(json as Map<String, dynamic>))
             .toList();
 

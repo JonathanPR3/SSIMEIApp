@@ -42,7 +42,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
       Future.delayed(const Duration(milliseconds: 1000), () {
         Navigator.pushNamed(
           context,
-          '/reset-password',
+          AppConstants.resetPasswordRoute,
           arguments: {'email': email},
         );
       });

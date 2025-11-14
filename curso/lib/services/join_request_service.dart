@@ -80,7 +80,13 @@ class JoinRequestService {
       print('   Response: ${response.body}');
 
       if (response.statusCode == 200) {
-        final List<dynamic> data = json.decode(response.body);
+        final jsonResponse = json.decode(response.body);
+
+        // El backend ahora puede devolver: {"join_requests": [...], "total": 0, ...}
+        final List<dynamic> data = jsonResponse is List
+            ? jsonResponse
+            : (jsonResponse['join_requests'] ?? jsonResponse['requests'] ?? []);
+
         final requests = data.map((json) => JoinRequest.fromJson(json)).toList();
         print('✅ ${requests.length} solicitudes obtenidas');
         return requests;
@@ -118,7 +124,13 @@ class JoinRequestService {
       print('   Response: ${response.body}');
 
       if (response.statusCode == 200) {
-        final List<dynamic> data = json.decode(response.body);
+        final jsonResponse = json.decode(response.body);
+
+        // El backend ahora puede devolver: {"join_requests": [...], "total": 0, ...}
+        final List<dynamic> data = jsonResponse is List
+            ? jsonResponse
+            : (jsonResponse['join_requests'] ?? jsonResponse['requests'] ?? []);
+
         final requests = data.map((json) => JoinRequest.fromJson(json)).toList();
         print('✅ ${requests.length} solicitudes pendientes');
         return requests;
@@ -156,7 +168,13 @@ class JoinRequestService {
       print('   Response: ${response.body}');
 
       if (response.statusCode == 200) {
-        final List<dynamic> data = json.decode(response.body);
+        final jsonResponse = json.decode(response.body);
+
+        // El backend ahora puede devolver: {"join_requests": [...], "total": 0, ...}
+        final List<dynamic> data = jsonResponse is List
+            ? jsonResponse
+            : (jsonResponse['join_requests'] ?? jsonResponse['requests'] ?? []);
+
         final requests = data.map((json) => JoinRequest.fromJson(json)).toList();
         print('✅ ${requests.length} solicitudes totales');
         return requests;

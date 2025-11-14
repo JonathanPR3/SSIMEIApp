@@ -42,11 +42,15 @@ static const bool isDevelopment = false; // ← Usando ngrok
 - ✅ Gestión de sesión con SharedPreferences
 - ✅ Middleware de autenticación en backend
 - ✅ Token expira en 60 minutos
+- ✅ Sistema de verificación de email ⭐ NUEVO 2025-11-13
+- ✅ Recuperación de contraseña con código ⭐ NUEVO 2025-11-13
+- ✅ Servicio de correo electrónico (yagmail) ⭐ NUEVO 2025-11-13
 
 **Archivos:**
 - `lib/services/api_auth_service.dart`
 - `lib/screens/auth/login_screen.dart`
 - `lib/screens/auth/register_screen.dart`
+- `lib/screens/auth/confirm_email_screen.dart` ⭐ NUEVO
 
 ---
 

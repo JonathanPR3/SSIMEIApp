@@ -349,49 +349,181 @@ class ApiAuthService {
   }
 
 // ==========================================
-// RECUPERACIÓN DE CONTRASEÑA
+// VERIFICACIÓN DE EMAIL
 // ==========================================
-// NOTA: La nueva API no implementa confirmación de email ni recuperación de contraseña
-// Estos métodos están aquí por compatibilidad con la UI existente
-// TODO: Implementar cuando el backend agregue estos endpoints
 
-/// Confirmar email con código (NO IMPLEMENTADO EN NUEVA API)
+/// Verificar email con código de 6 dígitos
 Future<AuthResult> confirmRegistration({
   required String email,
   required String confirmationCode,
 }) async {
-  print('⚠️ confirmRegistration no está implementado en la nueva API');
-  return AuthResult.success(
-    message: 'No se requiere confirmación de email en esta versión',
-  );
+  print('📧 Verificando email: $email');
+
+  if (ApiConfig.useMockMode) {
+    print('⚠️ MODO MOCK ACTIVO - Simulando verificación');
+    await Future.delayed(const Duration(milliseconds: 500));
+    return AuthResult.success(message: 'Email verificado exitosamente (MOCK)');
+  }
+
+  try {
+    final response = await _apiService.post<Map<String, dynamic>>(
+      ApiConfig.verifyEmail,
+      body: {
+        'email': email,
+        'verification_code': confirmationCode,
+      },
+    );
+
+    if (response.isSuccess) {
+      print('✅ Email verificado exitosamente');
+      return AuthResult.success(
+        message: response.data?['message'] ?? 'Email verificado exitosamente',
+      );
+    } else {
+      return AuthResult.error(response.message);
+    }
+  } catch (e) {
+    print('❌ Error verificando email: $e');
+    return AuthResult.error('Error al verificar email: $e');
+  }
 }
 
-/// Reenviar código de confirmación (NO IMPLEMENTADO EN NUEVA API)
+/// Reenviar código de verificación
 Future<AuthResult> resendConfirmationCode(String email) async {
-  print('⚠️ resendConfirmationCode no está implementado en la nueva API');
-  return AuthResult.success(
-    message: 'No se requiere confirmación de email en esta versión',
-  );
+  print('📨 Reenviando código de verificación a: $email');
+
+  if (ApiConfig.useMockMode) {
+    print('⚠️ MODO MOCK ACTIVO - Simulando reenvío');
+    await Future.delayed(const Duration(milliseconds: 500));
+    return AuthResult.success(message: 'Código reenviado exitosamente (MOCK)');
+  }
+
+  try {
+    final response = await _apiService.post<Map<String, dynamic>>(
+      ApiConfig.resendVerification,
+      body: {'email': email},
+    );
+
+    if (response.isSuccess) {
+      print('✅ Código reenviado exitosamente');
+      return AuthResult.success(
+        message: response.data?['message'] ?? 'Código enviado exitosamente',
+      );
+    } else {
+      return AuthResult.error(response.message);
+    }
+  } catch (e) {
+    print('❌ Error reenviando código: $e');
+    return AuthResult.error('Error al reenviar código: $e');
+  }
 }
 
-/// Recuperar contraseña (NO IMPLEMENTADO EN NUEVA API)
+// ==========================================
+// RECUPERACIÓN DE CONTRASEÑA
+// ==========================================
+
+/// Solicitar código de recuperación de contraseña
 Future<AuthResult> forgotPassword(String email) async {
-  print('⚠️ forgotPassword no está implementado en la nueva API');
-  return AuthResult.error(
-    'La recuperación de contraseña aún no está disponible. Contacta al administrador.',
-  );
+  print('🔐 Solicitando recuperación de contraseña para: $email');
+
+  if (ApiConfig.useMockMode) {
+    print('⚠️ MODO MOCK ACTIVO - Simulando solicitud');
+    await Future.delayed(const Duration(milliseconds: 500));
+    return AuthResult.success(message: 'Código de recuperación enviado (MOCK)');
+  }
+
+  try {
+    final response = await _apiService.post<Map<String, dynamic>>(
+      ApiConfig.forgotPassword,
+      body: {'email': email},
+    );
+
+    if (response.isSuccess) {
+      print('✅ Código de recuperación enviado');
+      return AuthResult.success(
+        message: response.data?['message'] ?? 'Código enviado a tu correo',
+      );
+    } else {
+      return AuthResult.error(response.message);
+    }
+  } catch (e) {
+    print('❌ Error solicitando recuperación: $e');
+    return AuthResult.error('Error al solicitar recuperación: $e');
+  }
 }
 
-/// Confirmar nueva contraseña con código (NO IMPLEMENTADO EN NUEVA API)
+/// Verificar código de recuperación de contraseña
+Future<AuthResult> verifyResetCode({
+  required String email,
+  required String resetCode,
+}) async {
+  print('🔍 Verificando código de recuperación');
+
+  if (ApiConfig.useMockMode) {
+    print('⚠️ MODO MOCK ACTIVO - Simulando verificación');
+    await Future.delayed(const Duration(milliseconds: 500));
+    return AuthResult.success(message: 'Código válido (MOCK)');
+  }
+
+  try {
+    final response = await _apiService.post<Map<String, dynamic>>(
+      ApiConfig.verifyResetCode,
+      body: {
+        'email': email,
+        'reset_code': resetCode,
+      },
+    );
+
+    if (response.isSuccess) {
+      print('✅ Código válido');
+      return AuthResult.success(
+        message: response.data?['message'] ?? 'Código verificado',
+      );
+    } else {
+      return AuthResult.error(response.message);
+    }
+  } catch (e) {
+    print('❌ Error verificando código: $e');
+    return AuthResult.error('Error al verificar código: $e');
+  }
+}
+
+/// Restablecer contraseña con código de recuperación
 Future<AuthResult> confirmPassword({
   required String email,
   required String confirmationCode,
   required String newPassword,
 }) async {
-  print('⚠️ confirmPassword no está implementado en la nueva API');
-  return AuthResult.error(
-    'La recuperación de contraseña aún no está disponible. Contacta al administrador.',
-  );
+  print('🔑 Restableciendo contraseña');
+
+  if (ApiConfig.useMockMode) {
+    print('⚠️ MODO MOCK ACTIVO - Simulando restablecimiento');
+    await Future.delayed(const Duration(milliseconds: 500));
+    return AuthResult.success(message: 'Contraseña restablecida (MOCK)');
+  }
+
+  try {
+    final response = await _apiService.post<Map<String, dynamic>>(
+      ApiConfig.resetPassword,
+      body: {
+        'email': email,
+        'reset_code': confirmationCode,
+        'new_password': newPassword,
+      },
+    );
+
+    if (response.isSuccess) {
+      print('✅ Contraseña restablecida exitosamente');
+      return AuthResult.success(
+        message: response.data?['message'] ?? 'Contraseña restablecida exitosamente',
+      );
+    } else {
+      return AuthResult.error(response.message);
+    }
+  } catch (e) {
+    print('❌ Error restableciendo contraseña: $e');
+    return AuthResult.error('Error al restablecer contraseña: $e');
+  }
 }
   
   // ==========================================

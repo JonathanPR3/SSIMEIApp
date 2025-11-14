@@ -109,7 +109,14 @@ class InvitationService {
       print('   Response: ${response.body}');
 
       if (response.statusCode == 200) {
-        final List<dynamic> data = json.decode(response.body);
+        final jsonResponse = json.decode(response.body);
+
+        // El backend ahora devuelve: {"invitations": [...], "total": 0, ...}
+        // Extraer el array de invitaciones
+        final List<dynamic> data = jsonResponse is List
+            ? jsonResponse
+            : (jsonResponse['invitations'] ?? []);
+
         final invitations = data.map((json) => Invitation.fromJson(json)).toList();
         print('✅ ${invitations.length} invitaciones obtenidas');
         return invitations;
