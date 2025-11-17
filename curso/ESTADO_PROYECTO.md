@@ -1,9 +1,41 @@
 # 📊 Estado del Proyecto - Sistema de Vigilancia con Detección de Incidentes
 
-**Última actualización:** 2025-11-08
+**Última actualización:** 2025-11-17
 **Proyecto:** App Flutter + FastAPI Backend
-**Tema:** Sistema de seguridad con notificaciones en tiempo real + Gestión de organizaciones
-**Estado actual:** ✅ **FUNCIONAL Y LISTO PARA DEMO** con ngrok
+**Tema:** Sistema de seguridad con notificaciones en tiempo real + Gestión de organizaciones + Reconocimiento Facial
+**Estado actual:** ✅ **FUNCIONAL Y LISTO PARA DEMO** con ngrok + Reconocimiento Facial Integrado
+
+---
+
+## 🆕 NOVEDAD: Reconocimiento Facial Integrado (2025-11-17)
+
+### ✅ Sistema Completamente Funcional
+- ✅ **Backend FastAPI con DeepFace/Facenet512** - Genera embeddings de 512 dimensiones
+- ✅ **Registro de rostros** - Envía imagen al backend para procesamiento
+- ✅ **Reconocimiento en tiempo real** - Compara contra base de datos usando distancia coseno
+- ✅ **Pantalla de prueba** - Test de reconocimiento con cámara frontal
+- ✅ **Gestión de rostros** - Lista, elimina rostros desde backend
+
+### Archivos Nuevos:
+- `lib/services/face_recognition_api_service.dart` - Servicio API completo
+- `lib/screens/test_face_recognition_screen.dart` - Pantalla de prueba
+
+### Archivos Modificados:
+- `lib/config/api_config.dart` - Endpoints de facial recognition
+- `lib/screens/face_capture_screen.dart` - Envía primera imagen al backend
+- `lib/screens/manage_faces_screen.dart` - Carga rostros desde backend
+- `lib/screens/settings/SettingsScreen.dart` - Opción de prueba agregada
+
+### Flujo de Trabajo:
+1. **REGISTRO:** Settings → Gestionar Rostros → Registrar → Capturar 5 fotos → Backend procesa primera imagen
+2. **PRUEBA:** Settings → Probar Reconocimiento → Capturar foto → Backend compara y reconoce
+3. **GESTIÓN:** Settings → Gestionar Rostros → Ver lista desde backend
+
+### Tecnologías:
+- **Backend:** DeepFace con modelo Facenet512
+- **Embeddings:** Vector de 512 dimensiones guardado como JSON en MySQL
+- **Comparación:** Distancia coseno (threshold 0.4 para reconocimiento, 0.15 para duplicados)
+- **Tipos:** `registered_user` (usuarios) y `non_user` (visitantes)
 
 ---
 
@@ -608,6 +640,10 @@ IMPLEMENTACION_DETECCIONES_GUIDE.md - Guía original (completada)
 - [x] Notificaciones push locales
 - [x] Simulación de incidentes
 - [x] Auto-actualización en tiempo real
+- [x] ✅ **Reconocimiento facial integrado** - NUEVO 2025-11-17
+- [x] ✅ **Registro de rostros con backend** - DeepFace/Facenet512
+- [x] ✅ **Reconocimiento en tiempo real** - Compara contra BD con distancia coseno
+- [x] ✅ **Pantalla de prueba de reconocimiento** - Test con cámara frontal
 
 **Despliegue y Testing (ACTUALIZADO 2025-11-08):**
 - [x] ✅ **ngrok configurado** - App funciona remotamente desde cualquier red

@@ -2,62 +2,135 @@
 
 ## 📋 Resumen de la Implementación
 
-Tu app ahora tiene la capacidad de **capturar y almacenar imágenes faciales localmente**, lista para enviarlas a tu API de backend cuando esté disponible.
+✅ **COMPLETADO (2025-11-17):** Sistema de reconocimiento facial **completamente integrado con backend FastAPI usando DeepFace/Facenet512**. La app ahora puede:
+- Registrar rostros enviando imagen al backend para generar embedding (512 dimensiones)
+- Reconocer rostros comparando contra base de datos usando distancia coseno
+- Listar rostros registrados de la organización
+- Probar reconocimiento facial en tiempo real con cámara frontal
 
 ## 🗂️ Estructura de Archivos Creados/Modificados
 
-### Nuevos Archivos
+### Nuevos Archivos (2025-11-17)
 
-1. **`lib/services/face_storage_service.dart`**
-   - Gestiona el almacenamiento local de imágenes
-   - Guarda imágenes en el dispositivo
-   - Organiza imágenes por face_id
-   - Prepara datos para envío a API
+1. **`lib/services/face_recognition_api_service.dart`** ⭐ NUEVO
+   - Servicio REAL conectado al backend FastAPI
+   - `registerFace()` - Envía imagen al backend para registro
+   - `recognizeFace()` - Reconoce rostro comparando contra BD
+   - `listFaces()` - Lista todos los rostros de la organización
+   - `deleteFace()` - Elimina rostro
+   - `getMyFace()` - Obtiene rostro del usuario actual
+   - Incluye manejo de `MediaType.parse()` para content-type correcto
 
-2. **`lib/services/face_api_service.dart`**
-   - Servicio preparado para comunicación con backend
-   - Métodos listos para usar cuando implementes la API
-   - Incluye ejemplos de estructura de request/response
+2. **`lib/screens/test_face_recognition_screen.dart`** ⭐ NUEVO
+   - Pantalla de prueba con preview de cámara frontal
+   - Captura foto y envía a `/api/v1/faces/recognize`
+   - Muestra resultado: reconocido/no reconocido
+   - Información detallada: nombre, tipo, confianza, face_id
+   - Estados visuales (borde verde si reconoce)
 
-### Archivos Modificados
+### Archivos Modificados (2025-11-17)
 
-3. **`lib/screens/face_capture_screen.dart`**
-   - Ahora guarda cada imagen capturada
-   - Almacena 5 imágenes por rostro (una por cada paso)
-   - Muestra mensajes de confirmación
+3. **`lib/config/api_config.dart`**
+   - Agregados endpoints de reconocimiento facial:
+     - `POST /api/v1/faces` - Registrar rostro
+     - `GET /api/v1/faces` - Listar rostros
+     - `DELETE /api/v1/faces/{id}` - Eliminar rostro
+     - `POST /api/v1/faces/recognize` - Reconocer rostro
+     - `GET /api/v1/faces/users/{userId}/face` - Rostro de usuario
 
-4. **`lib/services/face_service.dart`**
-   - Acepta rutas de imágenes guardadas
-   - Preparado para integración futura
+4. **`lib/screens/face_capture_screen.dart`**
+   - Mantiene proceso de captura de 5 imágenes (UX sin cambios)
+   - **Envía SOLO primera imagen al backend** para generar embedding
+   - Backend procesa con DeepFace/Facenet512 automáticamente
+   - Manejo de errores con dialog para guardar localmente si falla backend
+   - Guarda también localmente para compatibilidad
+
+5. **`lib/screens/manage_faces_screen.dart`**
+   - **Carga rostros desde backend** en lugar de almacenamiento local
+   - Toggle `useBackend = true` (usa API real)
+   - Soporta ambos tipos de rostros:
+     - `registered_user` - Usuario registrado (tiene user_id)
+     - `non_user` - Visitante (usa face_metadata con full_name)
+   - Manejo correcto de tipos de ID (int backend vs String local)
+   - Eliminación de rostros vía API
+
+6. **`lib/screens/settings/SettingsScreen.dart`**
+   - Agregada nueva opción en sección "Rostros"
+   - "Probar Reconocimiento Facial" con subtítulo "Modo de prueba"
+   - Navegación a `TestFaceRecognitionScreen`
+   - Modificado `_buildSettingsCard()` para aceptar `subtitle` opcional
 
 ## 📸 ¿Cómo Funciona Actualmente?
 
-### Flujo de Captura
+### Flujo de Registro de Rostro (Backend Integrado)
 
-1. Usuario abre "Gestionar Rostros"
+1. Usuario abre "Gestionar Rostros" desde Settings
 2. Presiona "Registrar Nuevo Rostro"
-3. La app captura **5 imágenes**:
+3. La app captura **5 imágenes** (UX sin cambios):
    - Paso 1: Rostro centrado
    - Paso 2: Girado a la izquierda
    - Paso 3: Girado a la derecha
    - Paso 4: Sonriendo
    - Paso 5: Expresión neutral
 
-4. Cada imagen se guarda en:
-   ```
-   /data/user/0/com.tu.app/app_flutter/registered_faces/{face_id}/
-   ├── {face_id}_step1_{timestamp}.jpg
-   ├── {face_id}_step2_{timestamp}.jpg
-   ├── {face_id}_step3_{timestamp}.jpg
-   ├── {face_id}_step4_{timestamp}.jpg
-   └── {face_id}_step5_{timestamp}.jpg
-   ```
+4. **Backend procesa SOLO la primera imagen:**
+   - Se envía a `POST /api/v1/faces` con multipart/form-data
+   - Backend usa DeepFace con modelo Facenet512
+   - Genera embedding de 512 dimensiones
+   - Verifica que no sea duplicado (threshold 0.15)
+   - Guarda en tabla `faces` con `organization_id`
 
 5. Al completar, el usuario ingresa:
    - Nombre completo
-   - Relación (Familiar, Empleado, etc.)
+   - Se crea como `type: non_user` (visitante)
+   - O se asocia con `user_id` si es usuario registrado
 
-6. Los datos se preparan para envío a API (estructura lista)
+6. **Almacenamiento dual:**
+   - ✅ Backend: Embedding en MySQL (JSON con 512 valores)
+   - ✅ Local: 5 imágenes guardadas para compatibilidad
+
+### Flujo de Reconocimiento (Prueba en Tiempo Real)
+
+1. Usuario abre Settings → "Probar Reconocimiento Facial"
+2. Se abre cámara frontal con preview
+3. Usuario presiona "Capturar y Reconocer"
+4. **Backend procesa:**
+   - Imagen se envía a `POST /api/v1/faces/recognize`
+   - Extrae embedding con DeepFace/Facenet512
+   - **Compara contra TODOS los rostros** de la organización
+   - Calcula distancia coseno con cada embedding guardado
+   - Filtra por threshold (default 0.4)
+   - Retorna el mejor match (top_n=1)
+
+5. **Respuesta muestra:**
+   - ✅ Reconocido: Nombre, tipo (Usuario/Visitante), confianza, face_id
+   - ❌ No reconocido: Mensaje de que no hay coincidencia
+
+### Backend - Modelo de Datos
+
+**Tabla `faces`:**
+```sql
+- id (int, PK, auto_increment)
+- organization_id (bigint, FK)
+- user_id (bigint, FK, nullable) -- Si es registered_user
+- type (enum: 'registered_user', 'non_user')
+- embedding (json) -- Vector de 512 dimensiones [0.123, 0.456, ...]
+- created_at (timestamp)
+- updated_at (timestamp)
+```
+
+**Tabla `face_metadata` (para visitantes):**
+```sql
+- id (int, PK)
+- face_id (int, FK)
+- full_name (varchar 255)
+- relationship (varchar 100, nullable)
+- notes (text, nullable)
+```
+
+**Tipos de rostros:**
+- `registered_user`: Tiene `user_id`, se obtiene nombre de tabla `users`
+- `non_user`: Visitante, usa `face_metadata.full_name`
 
 ### Ver las Imágenes Guardadas
 
@@ -72,11 +145,226 @@ for (var img in images) {
 }
 ```
 
-## 🚀 Próximos Pasos - Integración con Backend
+## 🧪 Cómo Probar el Sistema
 
-### Opción 1: Envío Inmediato a API
+### 1. Registrar un Rostro
 
-Cuando tengas tu backend listo, modifica `face_capture_screen.dart` línea 248:
+```bash
+# Desde la app:
+1. Settings → Gestionar Rostros
+2. Botón "Registrar Nuevo Rostro"
+3. Seguir proceso de 5 capturas
+4. Ingresar nombre: "Juan Pérez"
+5. Completar registro
+
+# Logs esperados:
+📤 Enviando rostro al backend...
+   URL: https://tu-api.com/api/v1/faces
+   User ID: null
+   Full Name: Juan Pérez
+📡 Respuesta: 201
+✅ Rostro registrado exitosamente
+   Face ID: 123
+   Type: non_user
+```
+
+### 2. Probar Reconocimiento
+
+```bash
+# Desde la app:
+1. Settings → Probar Reconocimiento Facial
+2. Posicionar rostro frente a cámara
+3. Botón "Capturar y Reconocer"
+
+# Logs esperados si reconoce:
+🔍 Reconociendo rostro...
+   Threshold: 0.4
+   Top N: 1
+📡 Respuesta: 200
+✅ Rostro reconocido!
+   Confidence: 0.85
+   Type: non_user
+
+# Resultado en pantalla:
+✅ Rostro Reconocido!
+👤 Nombre: Juan Pérez
+🏷️ Tipo: Visitante
+📊 Confianza: 85.0%
+🆔 Face ID: 123
+```
+
+### 3. Listar Rostros
+
+```bash
+# Desde la app:
+1. Settings → Gestionar Rostros
+2. Ver lista de rostros registrados
+
+# La pantalla carga desde backend automáticamente
+# useBackend = true en manage_faces_screen.dart
+```
+
+## 🔧 Parámetros Configurables
+
+### Threshold de Reconocimiento
+
+En `test_face_recognition_screen.dart` línea 88:
+
+```dart
+final result = await FaceRecognitionApiService.recognizeFace(
+  imagePath: image.path,
+  threshold: 0.4,  // ← Ajustar aquí
+  topN: 1,
+);
+```
+
+**Valores recomendados:**
+- `0.3` - Muy estricto (solo coincidencias casi perfectas)
+- `0.4` - Balanceado (default, recomendado)
+- `0.5` - Permisivo (puede dar algunos falsos positivos)
+- `0.6` - Muy permisivo (muchos falsos positivos)
+
+### Número de Mejores Matches
+
+```dart
+threshold: 0.4,
+topN: 3,  // Retorna los 3 mejores matches
+```
+
+## 🔑 Endpoints Utilizados
+
+### POST /api/v1/faces - Registrar Rostro
+
+**Request:**
+```http
+POST /api/v1/faces
+Authorization: Bearer {token}
+Content-Type: multipart/form-data
+
+Body:
+- image: File (imagen JPG/PNG)
+- user_id: int (opcional, para usuarios registrados)
+- full_name: string (requerido si user_id es null)
+```
+
+**Response 201:**
+```json
+{
+  "id": 123,
+  "organization_id": 5,
+  "user_id": null,
+  "type": "non_user",
+  "created_at": "2025-11-17T12:00:00",
+  "metadata": {
+    "full_name": "Juan Pérez"
+  }
+}
+```
+
+### POST /api/v1/faces/recognize - Reconocer Rostro
+
+**Request:**
+```http
+POST /api/v1/faces/recognize
+Authorization: Bearer {token}
+Content-Type: multipart/form-data
+
+Body:
+- image: File
+- threshold: float (default 0.4)
+- top_n: int (default 1)
+```
+
+**Response 200 (Match encontrado):**
+```json
+{
+  "match_found": true,
+  "confidence": 0.85,
+  "face": {
+    "id": 123,
+    "type": "non_user",
+    "metadata": {
+      "full_name": "Juan Pérez"
+    }
+  }
+}
+```
+
+**Response 200 (No match):**
+```json
+{
+  "match_found": false,
+  "message": "No se encontró ninguna coincidencia"
+}
+```
+
+### GET /api/v1/faces - Listar Rostros
+
+**Request:**
+```http
+GET /api/v1/faces?type=all&page=1&limit=20
+Authorization: Bearer {token}
+```
+
+**Query params:**
+- `type`: "all", "users", "non_users"
+- `search`: Buscar por nombre
+- `page`: Página (default 1)
+- `limit`: Items por página (default 20)
+
+**Response 200:**
+```json
+{
+  "total": 5,
+  "page": 1,
+  "limit": 20,
+  "data": [
+    {
+      "id": 123,
+      "type": "non_user",
+      "metadata": {"full_name": "Juan Pérez"},
+      "user": null
+    }
+  ]
+}
+```
+
+## 🐛 Troubleshooting
+
+### Error: "El archivo debe ser una imagen"
+
+**Causa:** Falta content-type en multipart upload
+
+**Solución:** Ya solucionado con `MediaType.parse(contentType)` en líneas 96-101 y 221-226 de `face_recognition_api_service.dart`
+
+### Error: "No hay sesión activa"
+
+**Causa:** Token no encontrado o nombre incorrecto
+
+**Solución:** Token se guarda como `'api_access_token'` en SharedPreferences (ya corregido en línea 15)
+
+### Error: Type mismatch - int vs String
+
+**Causa:** Backend usa int para IDs, local usa String
+
+**Solución:** Ya manejado en `manage_faces_screen.dart` con conversiones apropiadas
+
+### Rostro duplicado (409 Conflict)
+
+**Causa:** Backend detectó embedding muy similar (distancia < 0.15)
+
+**Solución:**
+- Esto es esperado, previene duplicados
+- Usuario puede eliminar rostro anterior e intentar de nuevo
+- O ajustar threshold de duplicados en backend
+
+## 🚀 Anteriormente: Integración con Backend (YA COMPLETADO)
+
+### ~~Opción 1: Envío Inmediato a API~~ ✅ IMPLEMENTADO
+
+~~Cuando tengas tu backend listo, modifica `face_capture_screen.dart` línea 248:~~
+
+**Estado actual:** Ya implementado en `face_capture_screen.dart`
 
 ```dart
 // ANTES (actual):
