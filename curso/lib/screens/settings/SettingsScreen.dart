@@ -354,41 +354,42 @@ class _SettingsScreenState extends State<SettingsScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Sección Cuenta
-            _buildSectionTitle('Cuenta'),
+            // 1. Sección Alertas (PRIORIDAD 1)
+            _buildSectionTitle('Alertas'),
+            const SizedBox(height: 12),
+            _buildAlertasCard(),
+
+            const SizedBox(height: 24),
+
+            // 2. Sección Miembros (PRIORIDAD 2)
+            _buildSectionTitle('Miembros'),
             const SizedBox(height: 12),
             _buildSettingsCard(
-              icon: Icons.person_outline,
-              title: 'Editar Perfil',
-              onTap: () {
-                // Cambiar al tab de perfil (índice 3)
-                widget.onTabChange?.call(4);
-              },
+              icon: Icons.people_outline,
+              title: 'Gestionar Miembros',
+              subtitle: 'Administra tu organización',
+              onTap: _showMemberManagement,
+            ),
+
+            const SizedBox(height: 12),
+
+            // Unirse con token (para desarrollo web)
+            _buildSettingsCard(
+              icon: Icons.vpn_key,
+              title: 'Unirse con Token de Invitación',
+              subtitle: 'Únete a una organización',
+              onTap: _showJoinWithTokenDialog,
             ),
 
             const SizedBox(height: 24),
 
-            // Sección Cámaras
-            _buildSectionTitle('Cámaras'),
-            const SizedBox(height: 12),
-            _buildSettingsCard(
-              icon: Icons.videocam_outlined,
-              title: 'Gestionar Cámaras',
-              showBadge: true,
-              onTap: () {
-                // Cambiar al tab de cámaras (índice 1)
-                widget.onTabChange?.call(1);
-              },
-            ),
-
-            const SizedBox(height: 24),
-
-            // Sección Rostros
-            _buildSectionTitle('Rostros'),
+            // 3. Sección Rostros (PRIORIDAD 3)
+            _buildSectionTitle('Reconocimiento Facial'),
             const SizedBox(height: 12),
             _buildSettingsCard(
               icon: Icons.face_outlined,
               title: 'Gestionar Rostros',
+              subtitle: 'Administra rostros registrados',
               onTap: _showFaceManagement,
             ),
 
@@ -411,30 +412,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
             const SizedBox(height: 24),
 
-            // Sección Miembros
-            _buildSectionTitle('Miembros'),
+            // 4. Sección Cámaras (PRIORIDAD 4)
+            _buildSectionTitle('Cámaras'),
             const SizedBox(height: 12),
             _buildSettingsCard(
-              icon: Icons.people_outline,
-              title: 'Gestionar Miembros',
-              onTap: _showMemberManagement,
+              icon: Icons.videocam_outlined,
+              title: 'Gestionar Cámaras',
+              subtitle: 'Configura tus cámaras',
+              onTap: () {
+                // Cambiar al tab de cámaras (índice 1)
+                widget.onTabChange?.call(1);
+              },
             ),
-
-            const SizedBox(height: 12),
-
-            // Unirse con token (para desarrollo web)
-            _buildSettingsCard(
-              icon: Icons.vpn_key,
-              title: 'Unirse con Token de Invitación',
-              onTap: _showJoinWithTokenDialog,
-            ),
-
-            const SizedBox(height: 24),
-
-            // Sección Alertas
-            _buildSectionTitle('Alertas'),
-            const SizedBox(height: 12),
-            _buildAlertasCard(),
           ],
         ),
       ),
@@ -457,7 +446,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     required String title,
     String? subtitle,
     required VoidCallback onTap,
-    bool showBadge = false,
   }) {
     return Container(
       decoration: BoxDecoration(
@@ -466,27 +454,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
       ),
       child: ListTile(
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        leading: Stack(
-          children: [
-            Icon(
-              icon,
-              color: Colors.white70,
-              size: 24,
-            ),
-            if (showBadge)
-              Positioned(
-                right: 0,
-                top: 0,
-                child: Container(
-                  width: 8,
-                  height: 8,
-                  decoration: const BoxDecoration(
-                    color: Colors.red,
-                    shape: BoxShape.circle,
-                  ),
-                ),
-              ),
-          ],
+        leading: Icon(
+          icon,
+          color: Colors.white70,
+          size: 24,
         ),
         title: Text(
           title,
@@ -522,13 +493,27 @@ class _SettingsScreenState extends State<SettingsScreen> {
         borderRadius: BorderRadius.circular(12),
       ),
       child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        leading: Icon(
+          alertasActivadas ? Icons.notifications_active : Icons.notifications_off,
+          color: alertasActivadas ? AppConstants.primaryBlue : Colors.grey,
+          size: 24,
+        ),
         title: const Text(
-          'Activar/Desactivar',
+          'Notificaciones Push',
           style: TextStyle(
             color: Colors.white,
             fontSize: 16,
-            fontWeight: FontWeight.w400,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        subtitle: Text(
+          alertasActivadas
+            ? 'Recibirás alertas de incidentes en tiempo real'
+            : 'No recibirás notificaciones de incidentes',
+          style: TextStyle(
+            color: alertasActivadas ? Colors.white70 : Colors.white54,
+            fontSize: 13,
           ),
         ),
         trailing: Switch(
@@ -537,9 +522,23 @@ class _SettingsScreenState extends State<SettingsScreen> {
             setState(() {
               alertasActivadas = value;
             });
+
+            // Mostrar feedback
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  value
+                    ? '✅ Notificaciones activadas'
+                    : '🔕 Notificaciones desactivadas',
+                ),
+                backgroundColor: value ? AppConstants.success : Colors.grey[700],
+                duration: const Duration(seconds: 2),
+                behavior: SnackBarBehavior.floating,
+              ),
+            );
           },
-          activeColor: const Color(0xFF1A6BE5),
-          activeTrackColor: const Color(0xFF1A6BE5).withOpacity(0.3),
+          activeColor: AppConstants.primaryBlue,
+          activeTrackColor: AppConstants.primaryBlue.withOpacity(0.3),
           inactiveThumbColor: Colors.grey,
           inactiveTrackColor: Colors.grey.withOpacity(0.3),
         ),

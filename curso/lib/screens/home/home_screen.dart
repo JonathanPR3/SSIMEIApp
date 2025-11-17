@@ -5,6 +5,7 @@ import 'package:curso/screens/gestion_camaras.dart';
 import 'package:curso/screens/incidencias.dart';
 import 'package:curso/screens/home/user_profile.dart';
 import 'package:curso/screens/settings/SettingsScreen.dart';
+import 'package:curso/screens/evidencia_detail.dart';
 import 'package:curso/widgets/custom_bottom_navbar.dart';
 import 'package:curso/providers/auth_provider.dart';
 import 'package:curso/constants/app_constants.dart';
@@ -25,7 +26,7 @@ class HomeScreen extends ConsumerStatefulWidget {
 class _HomeScreenState extends ConsumerState<HomeScreen> {
   int _currentIndex = 0;
   List<Map<String, dynamic>> cameras = [];
-  List<Map<String, dynamic>> recentEvidences = [];
+  List<EvidenceModel> recentEvidences = [];
   bool isLoading = true;
 
   final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
@@ -74,13 +75,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           'isActive': camera.status == CameraStatus.active,
         }).toList();
 
-        recentEvidences = evidencesResult.take(3).map((evidence) => {
-          'id': evidence.id,
-          'title': evidence.title,
-          'camera': evidence.cameraName,
-          'time': evidence.detectedAt,
-          'type': evidence.type.displayName,
-        }).toList();
+        recentEvidences = evidencesResult.take(3).cast<EvidenceModel>().toList();
 
         isLoading = false;
       });
@@ -385,172 +380,224 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final isActive = camera['isActive'] as bool;
     final statusColor = isActive ? AppConstants.success : AppConstants.error;
 
-    return Container(
-      width: 160,
-      margin: const EdgeInsets.only(right: 12),
-      decoration: BoxDecoration(
-        color: const Color(0xFF2A2A3E),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: statusColor.withOpacity(0.3),
-          width: 1,
+    return InkWell(
+      onTap: () {
+        // Navegar a la pantalla de Gestión de Cámaras (tab 1)
+        setState(() => _currentIndex = 1);
+      },
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        width: 160,
+        margin: const EdgeInsets.only(right: 12),
+        decoration: BoxDecoration(
+          color: const Color(0xFF2A2A3E),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: statusColor.withOpacity(0.3),
+            width: 1,
+          ),
         ),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Header con ícono y estado
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: statusColor.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(10),
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Header con ícono y estado
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: statusColor.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Icon(
+                      Icons.videocam,
+                      color: statusColor,
+                      size: 20,
+                    ),
                   ),
-                  child: Icon(
-                    Icons.videocam,
-                    color: statusColor,
-                    size: 20,
+                  const Spacer(),
+                  Container(
+                    width: 8,
+                    height: 8,
+                    decoration: BoxDecoration(
+                      color: statusColor,
+                      shape: BoxShape.circle,
+                    ),
                   ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              // Nombre
+              Text(
+                camera['name'],
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
                 ),
-                const Spacer(),
-                Container(
-                  width: 8,
-                  height: 8,
-                  decoration: BoxDecoration(
-                    color: statusColor,
-                    shape: BoxShape.circle,
-                  ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+              const SizedBox(height: 4),
+              // Ubicación
+              Text(
+                camera['location'],
+                style: TextStyle(
+                  color: Colors.grey[400],
+                  fontSize: 12,
                 ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            // Nombre
-            Text(
-              camera['name'],
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-            const SizedBox(height: 4),
-            // Ubicación
-            Text(
-              camera['location'],
-              style: TextStyle(
-                color: Colors.grey[400],
-                fontSize: 12,
+              const SizedBox(height: 8),
+              // Estado
+              Text(
+                camera['status'],
+                style: TextStyle(
+                  color: statusColor,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w500,
+                ),
               ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-            const SizedBox(height: 8),
-            // Estado
-            Text(
-              camera['status'],
-              style: TextStyle(
-                color: statusColor,
-                fontSize: 11,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildEvidenceCard(Map<String, dynamic> evidence) {
-    final typeColor = evidence['type'] == 'Pose Sospechosa'
-        ? AppConstants.orange
-        : Colors.red;
-    final typeIcon = evidence['type'] == 'Pose Sospechosa'
-        ? Icons.person_search
-        : Icons.person_off;
+  Widget _buildEvidenceCard(EvidenceModel evidence) {
+    Color typeColor;
+    IconData typeIcon;
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: const Color(0xFF2A2A3E),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: typeColor.withOpacity(0.3),
-          width: 1,
-        ),
-      ),
-      child: Row(
-        children: [
-          // Ícono de tipo
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: typeColor.withOpacity(0.2),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Icon(
-              typeIcon,
-              color: typeColor,
-              size: 20,
-            ),
+    switch (evidence.type) {
+      case EvidenceType.suspiciousPose:
+        typeColor = AppConstants.orange;
+        typeIcon = Icons.person_search;
+        break;
+      case EvidenceType.unauthorizedPerson:
+        typeColor = Colors.red;
+        typeIcon = Icons.person_off;
+        break;
+      case EvidenceType.forzadoCerradura:
+        typeColor = Colors.red[700]!;
+        typeIcon = Icons.lock_open;
+        break;
+      case EvidenceType.agresionPuerta:
+        typeColor = Colors.red[900]!;
+        typeIcon = Icons.door_front_door;
+        break;
+      case EvidenceType.escaladoVentana:
+        typeColor = Colors.orange[700]!;
+        typeIcon = Icons.window;
+        break;
+      case EvidenceType.arrojamientoObjetos:
+        typeColor = Colors.deepOrange;
+        typeIcon = Icons.warning;
+        break;
+      case EvidenceType.vistaProlongada:
+        typeColor = Colors.amber[700]!;
+        typeIcon = Icons.visibility;
+        break;
+    }
+
+    return InkWell(
+      onTap: () {
+        // Navegar al detalle de la evidencia
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => EvidenciaDetail(evidence: evidence),
           ),
-          const SizedBox(width: 12),
-          // Contenido
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  evidence['title'],
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
+        );
+      },
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: const Color(0xFF2A2A3E),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: typeColor.withOpacity(0.3),
+            width: 1,
+          ),
+        ),
+        child: Row(
+          children: [
+            // Ícono de tipo
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: typeColor.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(
+                typeIcon,
+                color: typeColor,
+                size: 20,
+              ),
+            ),
+            const SizedBox(width: 12),
+            // Contenido
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    evidence.title,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 6),
-                Row(
-                  children: [
-                    Icon(Icons.videocam, color: Colors.grey[400], size: 14),
-                    const SizedBox(width: 4),
-                    Expanded(
-                      child: Text(
-                        evidence['camera'],
+                  const SizedBox(height: 6),
+                  Row(
+                    children: [
+                      Icon(Icons.videocam, color: Colors.grey[400], size: 14),
+                      const SizedBox(width: 4),
+                      Expanded(
+                        child: Text(
+                          evidence.cameraName,
+                          style: TextStyle(
+                            color: Colors.grey[400],
+                            fontSize: 12,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      Icon(Icons.access_time, color: Colors.grey[400], size: 14),
+                      const SizedBox(width: 4),
+                      Text(
+                        _formatEvidenceTime(evidence.detectedAt),
                         style: TextStyle(
                           color: Colors.grey[400],
                           fontSize: 12,
                         ),
-                        overflow: TextOverflow.ellipsis,
                       ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 4),
-                Row(
-                  children: [
-                    Icon(Icons.access_time, color: Colors.grey[400], size: 14),
-                    const SizedBox(width: 4),
-                    Text(
-                      _formatEvidenceTime(evidence['time']),
-                      style: TextStyle(
-                        color: Colors.grey[400],
-                        fontSize: 12,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
+                    ],
+                  ),
+                ],
+              ),
             ),
-          ),
-        ],
+            // Ícono de navegación
+            Icon(
+              Icons.arrow_forward_ios,
+              color: Colors.grey[500],
+              size: 14,
+            ),
+          ],
+        ),
       ),
     );
   }

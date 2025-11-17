@@ -367,32 +367,55 @@ class _IncidenciasState extends State<Incidencias> {
     if (evidences.isEmpty) {
       return Scaffold(
         backgroundColor: const Color(0xFF1E1E2E),
-        body: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                Icons.security,
-                size: 64,
-                color: Colors.grey[600],
-              ),
-              const SizedBox(height: 16),
-              Text(
-                'No hay evidencias registradas',
-                style: TextStyle(
-                  color: Colors.grey[400],
-                  fontSize: 18,
-                  fontWeight: FontWeight.w500,
+        body: RefreshIndicator(
+          onRefresh: _loadEvidences,
+          color: AppConstants.primaryBlue,
+          child: CustomScrollView(
+            slivers: [
+              SliverFillRemaining(
+                hasScrollBody: false,
+                child: Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.security,
+                        size: 64,
+                        color: Colors.grey[600],
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        'No hay evidencias registradas',
+                        style: TextStyle(
+                          color: Colors.grey[400],
+                          fontSize: 18,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 40),
+                        child: Text(
+                          'Las evidencias aparecerán cuando se detecten comportamientos sospechosos',
+                          style: TextStyle(
+                            color: Colors.grey[500],
+                            fontSize: 14,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        'Desliza hacia abajo para actualizar',
+                        style: TextStyle(
+                          color: AppConstants.primaryBlue,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Las evidencias aparecerán cuando se detecten comportamientos sospechosos',
-                style: TextStyle(
-                  color: Colors.grey[500],
-                  fontSize: 14,
-                ),
-                textAlign: TextAlign.center,
               ),
             ],
           ),
@@ -404,18 +427,23 @@ class _IncidenciasState extends State<Incidencias> {
       backgroundColor: const Color(0xFF1E1E2E),
       body: RefreshIndicator(
         onRefresh: _loadEvidences,
-        child: Column(
-          children: [
-            _buildHeader(),
-            Expanded(
-              child: ListView.builder(
-                padding: const EdgeInsets.all(20),
-                itemCount: evidences.length,
-                itemBuilder: (context, index) {
-                  final evidence = evidences[index];
-                  final isLast = index == evidences.length - 1;
-                  return _buildTimelineItem(evidence, isLast);
-                },
+        color: AppConstants.primaryBlue,
+        child: CustomScrollView(
+          slivers: [
+            SliverToBoxAdapter(
+              child: _buildHeader(),
+            ),
+            SliverPadding(
+              padding: const EdgeInsets.all(20),
+              sliver: SliverList(
+                delegate: SliverChildBuilderDelegate(
+                  (context, index) {
+                    final evidence = evidences[index];
+                    final isLast = index == evidences.length - 1;
+                    return _buildTimelineItem(evidence, isLast);
+                  },
+                  childCount: evidences.length,
+                ),
               ),
             ),
           ],

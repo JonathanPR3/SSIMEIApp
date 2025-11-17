@@ -3,7 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:curso/providers/auth_provider.dart';
 import 'package:curso/constants/app_constants.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:curso/services/camera_service.dart';
+import 'package:curso/services/evidence_service.dart';
 
 class UserProfileScreen extends ConsumerStatefulWidget {
   const UserProfileScreen({super.key});
@@ -13,23 +14,38 @@ class UserProfileScreen extends ConsumerStatefulWidget {
 }
 
 class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
-  bool _tutorialCompleted = false;
-  bool _isLoadingTutorial = true;
+  int _totalCameras = 0;
+  int _activeCameras = 0;
+  int _totalIncidents = 0;
+  int _recentIncidents = 0;
+  bool _isLoadingStats = true;
 
   @override
   void initState() {
     super.initState();
-    _loadTutorialStatus();
+    _loadStats();
   }
 
-  Future<void> _loadTutorialStatus() async {
-    final user = ref.read(currentUserProvider);
-    if (user != null) {
-      final prefs = await SharedPreferences.getInstance();
+  Future<void> _loadStats() async {
+    setState(() => _isLoadingStats = true);
+
+    try {
+      final cameras = await CameraService.getCameras();
+      final incidents = await EvidenceService.getEvidences();
+
+      final now = DateTime.now();
+      final last24Hours = now.subtract(const Duration(hours: 24));
+
       setState(() {
-        _tutorialCompleted = prefs.getBool('tutorial_completed_${user.id}') ?? false;
-        _isLoadingTutorial = false;
+        _totalCameras = cameras.length;
+        _activeCameras = cameras.where((c) => c.status.name == 'active').length;
+        _totalIncidents = incidents.length;
+        _recentIncidents = incidents.where((i) => i.detectedAt.isAfter(last24Hours)).length;
+        _isLoadingStats = false;
       });
+    } catch (e) {
+      print('Error cargando estadísticas: $e');
+      setState(() => _isLoadingStats = false);
     }
   }
 
@@ -136,9 +152,13 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
     return Scaffold(
       backgroundColor: AppConstants.darkBackground,
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: EdgeInsets.all(isSmallScreen ? 12.0 : AppConstants.defaultPadding),
-          child: Column(
+        child: RefreshIndicator(
+          onRefresh: _loadStats,
+          color: AppConstants.primaryBlue,
+          child: SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: EdgeInsets.all(isSmallScreen ? 12.0 : AppConstants.defaultPadding),
+            child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // Header con avatar y saludo
@@ -153,20 +173,21 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
               
               // Estadísticas
               _buildStatsCard(isSmallScreen),
-              
+
               SizedBox(height: isSmallScreen ? 16 : 20),
-              
-              // Configuraciones
-              _buildSettingsCard(isSmallScreen),
-              
+
+              // Mensaje motivacional
+              _buildMotivationalCard(isSmallScreen),
+
               SizedBox(height: isSmallScreen ? 20 : 32),
-              
+
               // Botón de cerrar sesión
               _buildLogoutButton(authState, isSmallScreen),
               
               // Espacio adicional para evitar overflow
               const SizedBox(height: 16),
             ],
+            ),
           ),
         ),
       ),
@@ -326,6 +347,23 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
   }
 
   Widget _buildStatsCard(bool isSmallScreen) {
+    if (_isLoadingStats) {
+      return Container(
+        padding: EdgeInsets.all(isSmallScreen ? 16 : 20),
+        decoration: BoxDecoration(
+          color: AppConstants.cardBackground,
+          borderRadius: BorderRadius.circular(AppConstants.borderRadius + 2),
+          border: Border.all(
+            color: AppConstants.orange.withOpacity(0.2),
+            width: 1,
+          ),
+        ),
+        child: const Center(
+          child: CircularProgressIndicator(color: AppConstants.orange),
+        ),
+      );
+    }
+
     return Container(
       padding: EdgeInsets.all(isSmallScreen ? 16 : 20),
       decoration: BoxDecoration(
@@ -348,7 +386,7 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
               ),
               const SizedBox(width: 8),
               Text(
-                "Estadísticas",
+                "Estadísticas del Sistema",
                 style: TextStyle(
                   fontSize: isSmallScreen ? 16 : 18,
                   fontWeight: FontWeight.bold,
@@ -357,105 +395,170 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
               ),
             ],
           ),
-          
+
           SizedBox(height: isSmallScreen ? 12 : 16),
-          
-          // Grid de estadísticas en pantallas pequeñas
+
+          // Grid de estadísticas
           if (isSmallScreen) ...[
             Row(
               children: [
-                Expanded(child: _buildStatItem(Icons.videocam, "4", "Cámaras", isSmallScreen)),
-                const SizedBox(width: 12),
-                Expanded(child: _buildStatItem(Icons.warning, "12", "Incidencias", isSmallScreen)),
+                Expanded(
+                  child: _buildStatItem(
+                    Icons.videocam,
+                    "$_activeCameras/$_totalCameras",
+                    "Cámaras\nActivas",
+                    isSmallScreen,
+                    color: AppConstants.success,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: _buildStatItem(
+                    Icons.warning_amber,
+                    "$_totalIncidents",
+                    "Total\nIncidencias",
+                    isSmallScreen,
+                    color: AppConstants.error,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: _buildStatItem(
+                    Icons.access_time,
+                    "$_recentIncidents",
+                    "Últimas\n24 horas",
+                    isSmallScreen,
+                    color: AppConstants.orange,
+                  ),
+                ),
               ],
             ),
-            const SizedBox(height: 12),
-            _buildStatItem(Icons.access_time, "Hace 5 min", "Última actividad", isSmallScreen),
           ] else ...[
-            _buildInfoRow(Icons.videocam, "Cámaras registradas", "4", isSmallScreen),
+            _buildInfoRow(
+              Icons.videocam,
+              "Cámaras activas",
+              "$_activeCameras de $_totalCameras conectadas",
+              isSmallScreen,
+              valueColor: AppConstants.success,
+            ),
             _buildDivider(),
-            _buildInfoRow(Icons.warning, "Incidencias detectadas", "12", isSmallScreen),
+            _buildInfoRow(
+              Icons.warning_amber,
+              "Total de incidencias",
+              "$_totalIncidents detectadas",
+              isSmallScreen,
+              valueColor: AppConstants.error,
+            ),
             _buildDivider(),
-            _buildInfoRow(Icons.access_time, "Última actividad", "Hace 5 min", isSmallScreen),
+            _buildInfoRow(
+              Icons.access_time,
+              "Incidencias recientes",
+              "$_recentIncidents en las últimas 24 horas",
+              isSmallScreen,
+              valueColor: AppConstants.orange,
+            ),
           ],
         ],
       ),
     );
   }
 
-  Widget _buildStatItem(IconData icon, String value, String label, bool isSmallScreen) {
+  Widget _buildStatItem(IconData icon, String value, String label, bool isSmallScreen, {Color? color}) {
+    final itemColor = color ?? AppConstants.orange;
+
     return Container(
-      padding: const EdgeInsets.all(12),
+      height: isSmallScreen ? 110 : 120,
+      padding: EdgeInsets.symmetric(
+        horizontal: isSmallScreen ? 8 : 12,
+        vertical: isSmallScreen ? 12 : 16,
+      ),
       decoration: BoxDecoration(
-        color: AppConstants.darkBackground.withOpacity(0.5),
+        color: itemColor.withOpacity(0.1),
         borderRadius: BorderRadius.circular(AppConstants.borderRadius),
+        border: Border.all(
+          color: itemColor.withOpacity(0.3),
+          width: 1,
+        ),
       ),
       child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(icon, color: AppConstants.orange, size: isSmallScreen ? 20 : 24),
-          const SizedBox(height: 4),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: isSmallScreen ? 14 : 16,
-              fontWeight: FontWeight.bold,
-              color: AppConstants.white,
+          Icon(icon, color: itemColor, size: isSmallScreen ? 22 : 28),
+          const SizedBox(height: 6),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              value,
+              style: TextStyle(
+                fontSize: isSmallScreen ? 15 : 18,
+                fontWeight: FontWeight.bold,
+                color: AppConstants.white,
+              ),
             ),
           ),
+          const SizedBox(height: 4),
           Text(
             label,
             style: TextStyle(
               fontSize: isSmallScreen ? 10 : 12,
               color: AppConstants.textLight,
+              height: 1.2,
             ),
             textAlign: TextAlign.center,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
           ),
         ],
       ),
     );
   }
 
-  Widget _buildSettingsCard(bool isSmallScreen) {
+  Widget _buildMotivationalCard(bool isSmallScreen) {
+    final messages = [
+      {"emoji": "🛡️", "text": "Tu vigilancia mantiene todo seguro", "color": AppConstants.success},
+      {"emoji": "👀", "text": "Siempre alerta, siempre protegiendo", "color": AppConstants.primaryBlue},
+      {"emoji": "🎯", "text": "Detección precisa, seguridad garantizada", "color": AppConstants.orange},
+      {"emoji": "⚡", "text": "Tecnología que nunca duerme", "color": AppConstants.warning},
+      {"emoji": "🚀", "text": "Innovación en seguridad 24/7", "color": AppConstants.success},
+      {"emoji": "💪", "text": "Protección que inspira confianza", "color": AppConstants.primaryBlue},
+    ];
+
+    final randomMessage = messages[DateTime.now().hour % messages.length];
+
     return Container(
       padding: EdgeInsets.all(isSmallScreen ? 16 : 20),
       decoration: BoxDecoration(
-        color: AppConstants.cardBackground,
+        gradient: LinearGradient(
+          colors: [
+            (randomMessage["color"] as Color).withOpacity(0.2),
+            (randomMessage["color"] as Color).withOpacity(0.05),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
         borderRadius: BorderRadius.circular(AppConstants.borderRadius + 2),
         border: Border.all(
-          color: AppConstants.success.withOpacity(0.2),
+          color: (randomMessage["color"] as Color).withOpacity(0.3),
           width: 1,
         ),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
         children: [
-          Row(
-            children: [
-              Icon(
-                Icons.settings_outlined,
-                color: AppConstants.success,
-                size: isSmallScreen ? 20 : 24,
-              ),
-              const SizedBox(width: 8),
-              Text(
-                "Configuración",
-                style: TextStyle(
-                  fontSize: isSmallScreen ? 16 : 18,
-                  fontWeight: FontWeight.bold,
-                  color: AppConstants.success,
-                ),
-              ),
-            ],
+          Text(
+            randomMessage["emoji"] as String,
+            style: TextStyle(fontSize: isSmallScreen ? 32 : 40),
           ),
-          
-          SizedBox(height: isSmallScreen ? 12 : 16),
-          
-          _buildInfoRow(
-            Icons.school_outlined,
-            "Tutorial completado",
-            _isLoadingTutorial ? "Cargando..." : (_tutorialCompleted ? "Completado" : "Pendiente"),
-            isSmallScreen,
-            valueColor: _tutorialCompleted ? AppConstants.success : AppConstants.warning,
+          const SizedBox(width: 16),
+          Expanded(
+            child: Text(
+              randomMessage["text"] as String,
+              style: TextStyle(
+                fontSize: isSmallScreen ? 14 : 16,
+                fontWeight: FontWeight.w600,
+                color: AppConstants.white,
+                height: 1.3,
+              ),
+            ),
           ),
         ],
       ),

@@ -186,10 +186,22 @@ class ApiAuthService {
       final accessToken = await _apiService.getAccessToken();
       final userData = await _getUserData();
 
-      if (accessToken == null || userData == null) {
-        print('❌ No hay sesión guardada');
+      print('   Token presente: ${accessToken != null}');
+      print('   Usuario presente: ${userData != null}');
+
+      if (accessToken == null) {
+        print('❌ No hay token guardado');
         return SessionStatus.notFound;
       }
+
+      if (userData == null) {
+        print('❌ No hay datos de usuario guardados');
+        // Limpiar token si no hay usuario
+        await _apiService.clearTokens();
+        return SessionStatus.notFound;
+      }
+
+      print('✅ Token y usuario encontrados: ${userData.nombreCompleto}');
 
       // MODO TEST: Asumir sesión válida si existe
       if (ApiConfig.useMockMode) {
@@ -198,16 +210,20 @@ class ApiAuthService {
       }
 
       // Verificar que el token sea válido llamando a /auth/me
+      print('🔐 Validando token con el servidor...');
       final response = await _apiService.get<Map<String, dynamic>>(
         ApiConfig.me,
         requiresAuth: true,
       );
 
       if (response.isSuccess) {
-        print('✅ Sesión válida');
+        print('✅ Sesión válida confirmada por el servidor');
         return SessionStatus.active;
       } else {
-        print('❌ Sesión inválida o expirada');
+        print('❌ Sesión inválida o expirada (servidor respondió: ${response.message})');
+        // Limpiar sesión expirada
+        await _apiService.clearTokens();
+        await _clearUserData();
         return SessionStatus.expired;
       }
     } catch (e) {
@@ -301,15 +317,14 @@ class ApiAuthService {
   /// Cerrar sesión
   Future<void> logout() async {
     print('🚪 Cerrando sesión...');
-    
+
     try {
       // Limpiar tokens de la API
       await _apiService.clearTokens();
-      
+
       // Limpiar datos del usuario
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.remove(AppConstants.userDataKey);
-      
+      await _clearUserData();
+
       print('✅ Sesión cerrada exitosamente');
     } catch (e) {
       print('❌ Error durante logout: $e');
@@ -584,18 +599,23 @@ Future<AuthResult> confirmPassword({
   Future<void> _saveUserData(User user, {Map<String, dynamic>? backendData}) async {
     final prefs = await SharedPreferences.getInstance();
 
-    // Si tenemos datos del backend, guardarlos también para preservar campos como 'role'
+    // SIEMPRE usar el modelo User serializado para garantizar compatibilidad
+    // Esto asegura que al deserializar funcione correctamente con User.fromJson()
+    final userData = user.toJson();
+
+    await prefs.setString(
+      AppConstants.userDataKey,
+      json.encode(userData),
+    );
+
+    // Si tenemos datos del backend, guardarlos aparte para referencia (opcional)
     if (backendData != null) {
       await prefs.setString(
-        AppConstants.userDataKey,
+        '${AppConstants.userDataKey}_raw',
         json.encode(backendData),
       );
-      print('💾 Datos de usuario guardados (con datos del backend)');
+      print('💾 Datos de usuario guardados (con respaldo del backend)');
     } else {
-      await prefs.setString(
-        AppConstants.userDataKey,
-        json.encode(user.toJson()),
-      );
       print('💾 Datos de usuario guardados');
     }
   }
@@ -606,15 +626,37 @@ Future<AuthResult> confirmPassword({
       final prefs = await SharedPreferences.getInstance();
       final userDataStr = prefs.getString(AppConstants.userDataKey);
 
-      if (userDataStr != null) {
-        final userMap = json.decode(userDataStr) as Map<String, dynamic>;
-        return User.fromJson(userMap);
+      if (userDataStr == null) {
+        print('ℹ️ No hay datos de usuario guardados');
+        return null;
       }
 
-      return null;
-    } catch (e) {
+      print('📖 Intentando deserializar usuario guardado...');
+      final userMap = json.decode(userDataStr) as Map<String, dynamic>;
+      final user = User.fromJson(userMap);
+
+      print('✅ Usuario deserializado correctamente: ${user.nombreCompleto}');
+      return user;
+    } catch (e, stackTrace) {
       print('❌ Error obteniendo datos de usuario: $e');
+      print('Stack trace: $stackTrace');
+
+      // Limpiar datos corruptos
+      await _clearUserData();
+
       return null;
+    }
+  }
+
+  /// Limpiar datos del usuario de SharedPreferences
+  Future<void> _clearUserData() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove(AppConstants.userDataKey);
+      await prefs.remove('${AppConstants.userDataKey}_raw');
+      print('🗑️ Datos de usuario eliminados');
+    } catch (e) {
+      print('❌ Error limpiando datos de usuario: $e');
     }
   }
 

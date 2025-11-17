@@ -297,22 +297,24 @@ class _AddCameraDialogState extends State<AddCameraDialog> {
     return Dialog(
       backgroundColor: const Color(0xFF2A2A3E),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildHeader(),
-            const SizedBox(height: 24),
-            _buildTextField('Nombre de la cámara', 'Ej: Cámara Recepción', _nameController),
-            const SizedBox(height: 16),
-            _buildTextField('Ubicación', 'Ej: Entrada principal', _locationController),
-            const SizedBox(height: 16),
-            _buildTextField('URL RTSP', 'rtsp://192.168.X.X:554/stream', _urlController),
-            const SizedBox(height: 24),
-            _buildActions(),
-          ],
+      child: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildHeader(),
+              const SizedBox(height: 24),
+              _buildTextField('Nombre de la cámara', 'Ej: Cámara Recepción', _nameController),
+              const SizedBox(height: 16),
+              _buildTextField('Ubicación', 'Ej: Entrada principal', _locationController),
+              const SizedBox(height: 16),
+              _buildTextField('URL RTSP', 'rtsp://192.168.X.X:554/stream', _urlController),
+              const SizedBox(height: 24),
+              _buildActions(),
+            ],
+          ),
         ),
       ),
     );
