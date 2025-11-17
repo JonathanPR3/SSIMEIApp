@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:curso/screens/manage_faces_screen.dart';
 import 'package:curso/screens/organization/manage_organization_screen.dart';
+import 'package:curso/screens/test_face_recognition_screen.dart';
 import 'package:curso/services/invitation_service.dart';
 import 'package:curso/constants/app_constants.dart';
 
@@ -391,6 +392,23 @@ class _SettingsScreenState extends State<SettingsScreen> {
               onTap: _showFaceManagement,
             ),
 
+            const SizedBox(height: 12),
+
+            // Probar Reconocimiento Facial (Test/Demo)
+            _buildSettingsCard(
+              icon: Icons.face_retouching_natural,
+              title: 'Probar Reconocimiento Facial',
+              subtitle: 'Modo de prueba',
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const TestFaceRecognitionScreen(),
+                  ),
+                );
+              },
+            ),
+
             const SizedBox(height: 24),
 
             // Sección Miembros
@@ -437,6 +455,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Widget _buildSettingsCard({
     required IconData icon,
     required String title,
+    String? subtitle,
     required VoidCallback onTap,
     bool showBadge = false,
   }) {
@@ -477,6 +496,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
             fontWeight: FontWeight.w400,
           ),
         ),
+        subtitle: subtitle != null
+            ? Text(
+                subtitle,
+                style: const TextStyle(
+                  color: Colors.white54,
+                  fontSize: 13,
+                ),
+              )
+            : null,
         trailing: const Icon(
           Icons.arrow_forward_ios,
           color: Colors.white54,

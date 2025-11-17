@@ -70,7 +70,13 @@ class ApiConfig {
 
   // WebSocket
   static String webSocketUrl(String token) => '${baseUrl.replaceAll('http', 'ws')}/ws/notifications?token=$token';
-  
+
+  // Faces - Reconocimiento Facial
+  static const String faces = '/api/v1/faces';
+  static String faceById(int faceId) => '/api/v1/faces/$faceId';
+  static const String recognizeFace = '/api/v1/faces/recognize';
+  static String userFace(int userId) => '/api/v1/faces/users/$userId/face';
+
   // ==========================================
   // CONFIGURACIÓN DE TIMEOUTS
   // ==========================================

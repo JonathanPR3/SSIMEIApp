@@ -4,6 +4,7 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:curso/constants/app_constants.dart';
 import 'package:curso/services/face_service.dart';
 import 'package:curso/services/face_storage_service.dart';
+import 'package:curso/services/face_recognition_api_service.dart';
 
 class FaceCaptureScreen extends StatefulWidget {
   const FaceCaptureScreen({super.key});
@@ -231,36 +232,73 @@ class _FaceCaptureScreenState extends State<FaceCaptureScreen>
           print('📸 Total de imágenes capturadas: ${imagePaths.length}');
           print('📂 Ubicación: ${imagePaths.isNotEmpty ? imagePaths.first : "N/A"}');
 
-          // Preparar datos para envío futuro a API
-          final apiData = FaceStorageService.prepareFaceDataForAPI(
-            faceId: _currentFaceId!,
-            name: name,
-            relationship: relationship,
-            imagePaths: imagePaths,
-          );
+          // NUEVO: Enviar la PRIMERA imagen al backend
+          if (imagePaths.isNotEmpty) {
+            _showMessage('Enviando rostro al backend...');
 
-          print('📦 Datos preparados para API:');
-          print('   - Face ID: ${apiData['face_id']}');
-          print('   - Nombre: ${apiData['name']}');
-          print('   - Imágenes: ${apiData['images_count']}');
+            final apiResult = await FaceRecognitionApiService.registerFace(
+              imagePath: imagePaths.first, // Solo la primera imagen
+              userId: null, // null = persona sin usuario registrado
+              fullName: name,
+            );
 
-          // Registrar rostro (actualmente en memoria)
-          await FaceService.registerFace(
-            name: name,
-            relationship: relationship,
-            imageUrl: imagePaths.isNotEmpty ? imagePaths.first : 'no_image',
-            processingResult: {
-              'steps_completed': steps.length,
-              'final_confidence': confidence,
-              'processing_time': DateTime.now().millisecondsSinceEpoch,
-              'face_id': _currentFaceId,
-            },
-            savedImagePaths: imagePaths,
-          );
+            if (apiResult['success']) {
+              print('✅ Backend procesó el rostro correctamente');
+              print('   Face ID (backend): ${apiResult['face_id']}');
+              print('   Type: ${apiResult['type']}');
 
-          _showMessage('Rostro registrado exitosamente con ${imagePaths.length} imágenes');
-          await Future.delayed(const Duration(seconds: 2));
-          Navigator.pop(context, true);
+              // Registrar también localmente (opcional, para compatibilidad)
+              await FaceService.registerFace(
+                name: name,
+                relationship: relationship,
+                imageUrl: imagePaths.first,
+                processingResult: {
+                  'steps_completed': steps.length,
+                  'final_confidence': confidence,
+                  'processing_time': DateTime.now().millisecondsSinceEpoch,
+                  'face_id': _currentFaceId,
+                  'backend_face_id': apiResult['face_id'], // ID del backend
+                },
+                savedImagePaths: imagePaths,
+              );
+
+              _showMessage('✅ Rostro registrado exitosamente en el servidor');
+              await Future.delayed(const Duration(seconds: 2));
+              Navigator.pop(context, true);
+            } else {
+              // Error del backend
+              _showMessage('❌ Error del servidor: ${apiResult['message']}');
+              print('❌ Error del backend: ${apiResult['message']}');
+
+              // Preguntar si quiere guardar localmente de todos modos
+              final saveLocal = await _showErrorDialog(
+                'Error al registrar en servidor',
+                '${apiResult['message']}\n\n¿Deseas guardar localmente?',
+              );
+
+              if (saveLocal == true) {
+                await FaceService.registerFace(
+                  name: name,
+                  relationship: relationship,
+                  imageUrl: imagePaths.first,
+                  processingResult: {
+                    'steps_completed': steps.length,
+                    'final_confidence': confidence,
+                    'processing_time': DateTime.now().millisecondsSinceEpoch,
+                    'face_id': _currentFaceId,
+                    'backend_error': apiResult['message'],
+                  },
+                  savedImagePaths: imagePaths,
+                );
+
+                _showMessage('Guardado localmente');
+                await Future.delayed(const Duration(seconds: 2));
+                Navigator.pop(context, true);
+              }
+            }
+          } else {
+            _showMessage('No se capturó ninguna imagen');
+          }
         } else {
           _showMessage('Por favor completa todos los campos');
         }
@@ -338,6 +376,37 @@ class _FaceCaptureScreenState extends State<FaceCaptureScreen>
               }
             },
             child: const Text('Registrar'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<bool?> _showErrorDialog(String title, String message) async {
+    return await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF2A2A3E),
+        title: Text(
+          title,
+          style: const TextStyle(color: Colors.white),
+        ),
+        content: Text(
+          message,
+          style: const TextStyle(color: Colors.white70),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('No'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppConstants.primaryBlue,
+            ),
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Sí'),
           ),
         ],
       ),
