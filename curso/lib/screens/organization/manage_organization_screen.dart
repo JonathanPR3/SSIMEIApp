@@ -3,6 +3,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 import 'package:curso/constants/app_constants.dart';
 import 'package:curso/models/organization_model.dart';
 import 'package:curso/models/invitation_model.dart';
@@ -71,9 +72,20 @@ class _ManageOrganizationScreenState extends State<ManageOrganizationScreen>
       if (userDataStr != null) {
         final userMap = json.decode(userDataStr) as Map<String, dynamic>;
 
-        // Obtener rol directamente del JSON (el backend lo guarda como string)
-        final role = userMap['role'] as String?;
+        // Intentar obtener role directamente del backend (ADMIN/USER)
+        // Si no está, usar userType del modelo Flutter (administrator/common)
+        String? role = userMap['role'] as String?;
         final userId = userMap['id'];
+
+        // Si no hay role del backend, convertir desde userType
+        if (role == null || role.isEmpty) {
+          final userType = userMap['userType'] as String?;
+          if (userType == 'administrator') {
+            role = 'ADMIN';
+          } else if (userType == 'common') {
+            role = 'USER';
+          }
+        }
 
         setState(() {
           _currentUserRole = role;
@@ -638,11 +650,12 @@ class _ManageOrganizationScreenState extends State<ManageOrganizationScreen>
                   ),
                 ),
                 const Spacer(),
-                if (isActive)
+                // Solo mostrar botón de copiar si el token está disponible
+                if (isActive && invitation.token != null && invitation.token!.isNotEmpty)
                   TextButton.icon(
-                    onPressed: () => _copyInvitationLink(invitation.invitationLink ?? ''),
+                    onPressed: () => _copyInvitationToken(invitation.token!),
                     icon: const Icon(Icons.copy, size: 16),
-                    label: const Text('Copiar'),
+                    label: const Text('Copiar Token'),
                     style: TextButton.styleFrom(
                       foregroundColor: AppConstants.primaryBlue,
                     ),
@@ -651,7 +664,7 @@ class _ManageOrganizationScreenState extends State<ManageOrganizationScreen>
             ),
             const SizedBox(height: 12),
 
-            // Link
+            // Info de la invitación
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
@@ -660,16 +673,19 @@ class _ManageOrganizationScreenState extends State<ManageOrganizationScreen>
               ),
               child: Row(
                 children: [
+                  Icon(
+                    Icons.badge,
+                    size: 16,
+                    color: isActive ? AppConstants.primaryBlue : Colors.grey[600],
+                  ),
+                  const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      invitation.invitationLink ?? 'Link no disponible',
+                      'Invitación #${invitation.id} • Rol: USER',
                       style: TextStyle(
-                        color: isActive ? AppConstants.primaryBlue : Colors.grey[600],
+                        color: isActive ? Colors.white70 : Colors.grey[600],
                         fontSize: 12,
-                        fontFamily: 'monospace',
                       ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
                 ],
@@ -1138,14 +1154,14 @@ class _ManageOrganizationScreenState extends State<ManageOrganizationScreen>
 
       Navigator.pop(context); // Cerrar loading
 
-      // Copiar link automáticamente al portapapeles
-      final link = invitation.invitationLink ?? '';
-      if (link.isNotEmpty) {
-        await Clipboard.setData(ClipboardData(text: link));
+      // Copiar token automáticamente al portapapeles
+      final token = invitation.token ?? '';
+      if (token.isNotEmpty) {
+        await Clipboard.setData(ClipboardData(text: token));
       }
 
-      // Mostrar diálogo con el link
-      await _showInvitationLinkDialog(invitation);
+      // Mostrar diálogo con el token
+      await _showInvitationTokenDialog(invitation);
 
       // Recargar invitaciones
       await _loadAllData();
@@ -1155,8 +1171,8 @@ class _ManageOrganizationScreenState extends State<ManageOrganizationScreen>
     }
   }
 
-  Future<void> _showInvitationLinkDialog(Invitation invitation) async {
-    final link = invitation.invitationLink ?? 'Link no disponible';
+  Future<void> _showInvitationTokenDialog(Invitation invitation) async {
+    final token = invitation.token ?? 'Token no disponible';
 
     return showDialog(
       context: context,
@@ -1167,105 +1183,138 @@ class _ManageOrganizationScreenState extends State<ManageOrganizationScreen>
           children: [
             Icon(Icons.check_circle, color: AppConstants.primaryBlue, size: 28),
             const SizedBox(width: 12),
-            const Text(
-              'Invitación Creada',
-              style: TextStyle(color: Colors.white),
+            const Expanded(
+              child: Text(
+                'Invitación Creada',
+                style: TextStyle(color: Colors.white),
+              ),
             ),
           ],
         ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              '¡Link copiado al portapapeles!',
-              style: TextStyle(
-                color: Colors.white70,
-                fontSize: 14,
-              ),
-            ),
-            const SizedBox(height: 16),
-            const Text(
-              'Comparte este link:',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: const Color(0xFF1E1E2E),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(
-                  color: AppConstants.primaryBlue.withOpacity(0.3),
-                  width: 1,
-                ),
-              ),
-              child: SelectableText(
-                link,
-                style: TextStyle(
-                  color: AppConstants.primaryBlue,
-                  fontSize: 12,
-                  fontFamily: 'monospace',
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: AppConstants.orange.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(
-                  color: AppConstants.orange.withOpacity(0.3),
-                  width: 1,
-                ),
-              ),
-              child: Row(
-                children: [
-                  Icon(Icons.info_outline, color: AppConstants.orange, size: 20),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      'Este link expira en ${invitation.timeUntilExpirationDisplay}. Guárdalo ahora.',
-                      style: TextStyle(
-                        color: AppConstants.orange,
-                        fontSize: 11,
-                      ),
+        content: SizedBox(
+          width: 280,
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                // QR Code
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: SizedBox(
+                    width: 180,
+                    height: 180,
+                    child: QrImageView(
+                      data: token,
+                      version: QrVersions.auto,
+                      size: 180,
+                      backgroundColor: Colors.white,
+                      errorCorrectionLevel: QrErrorCorrectLevel.M,
                     ),
                   ),
-                ],
+                ),
+              const SizedBox(height: 16),
+              Text(
+                'Escanea el código QR',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
+              const SizedBox(height: 4),
+              Text(
+                'o comparte el token:',
+                style: TextStyle(
+                  color: Colors.white70,
+                  fontSize: 12,
+                ),
+              ),
+              const SizedBox(height: 12),
+              // Token texto (colapsable)
+              Container(
+                padding: const EdgeInsets.all(10),
+                constraints: const BoxConstraints(maxHeight: 80),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF1E1E2E),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: AppConstants.primaryBlue.withOpacity(0.3),
+                    width: 1,
+                  ),
+                ),
+                child: SingleChildScrollView(
+                  child: SelectableText(
+                    token,
+                    style: TextStyle(
+                      color: AppConstants.primaryBlue,
+                      fontSize: 9,
+                      fontFamily: 'monospace',
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              // Advertencia de expiración
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: AppConstants.orange.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: AppConstants.orange.withOpacity(0.3),
+                    width: 1,
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.timer, color: AppConstants.orange, size: 18),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Expira en ${invitation.timeUntilExpirationDisplay}',
+                        style: TextStyle(
+                          color: AppConstants.orange,
+                          fontSize: 11,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
         actions: [
           TextButton.icon(
             onPressed: () {
-              Clipboard.setData(ClipboardData(text: link));
-              _showSuccessSnackBar('Link copiado nuevamente');
+              Clipboard.setData(ClipboardData(text: token));
+              _showSuccessSnackBar('Token copiado');
             },
-            icon: const Icon(Icons.copy, size: 18),
-            label: const Text('Copiar de nuevo'),
+            icon: const Icon(Icons.copy, size: 16),
+            label: const Text('Copiar'),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(context),
             style: ElevatedButton.styleFrom(
               backgroundColor: AppConstants.primaryBlue,
             ),
-            child: const Text('Entendido'),
+            child: const Text('Listo'),
           ),
         ],
       ),
     );
   }
 
-  void _copyInvitationLink(String link) {
-    Clipboard.setData(ClipboardData(text: link));
-    _showSuccessSnackBar('Link copiado al portapapeles');
+  void _copyInvitationToken(String token) {
+    Clipboard.setData(ClipboardData(text: token));
+    _showSuccessSnackBar('Token copiado al portapapeles');
   }
 
   Future<void> _revokeInvitation(int invitationId) async {

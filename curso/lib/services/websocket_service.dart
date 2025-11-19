@@ -88,6 +88,15 @@ class WebSocketService {
           'message': json['message'] ?? 'Tu organización ha sido actualizada',
           'data': json['data'],
         });
+      } else if (json['type'] == 'join_request_approved') {
+        // Solicitud de unión aprobada - usuario debe refrescar sesión
+        print('✅ SOLICITUD DE UNIÓN APROBADA');
+        _orgChangeController.add({
+          'action': 'joined',
+          'message': json['message'] ?? 'Tu solicitud de unión ha sido aprobada',
+          'organization_name': json['organization_name'],
+          'data': json['data'],
+        });
       } else if (json['type'] == 'ping') {
         // Keep-alive ping
         print('💓 Ping recibido');

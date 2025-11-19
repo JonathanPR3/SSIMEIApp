@@ -151,6 +151,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       } else if (change['action'] == 'updated' && mounted) {
         // Organización actualizada (rol cambiado, etc)
         _handleOrgUpdated(change);
+      } else if (change['action'] == 'joined' && mounted) {
+        // Solicitud de unión aprobada - debe cerrar sesión para actualizar
+        _handleJoinApproved(change);
       }
     });
   }
@@ -230,6 +233,89 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         ),
       );
     }
+  }
+
+  /// Manejar cuando la solicitud de unión es aprobada
+  Future<void> _handleJoinApproved(Map<String, dynamic> change) async {
+    print('✅ SOLICITUD DE UNIÓN APROBADA - Mostrando diálogo...');
+
+    final orgName = change['organization_name'] ?? 'la organización';
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF2A2A3E),
+        title: Row(
+          children: [
+            Icon(Icons.check_circle, color: AppConstants.success, size: 32),
+            const SizedBox(width: 12),
+            const Expanded(
+              child: Text(
+                '¡Solicitud Aprobada!',
+                style: TextStyle(color: Colors.white),
+              ),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Te has unido exitosamente a "$orgName".',
+              style: const TextStyle(color: Colors.white, fontSize: 15),
+            ),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: AppConstants.orange.withOpacity(0.15),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: AppConstants.orange.withOpacity(0.3),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.info_outline, color: AppConstants.orange, size: 20),
+                  const SizedBox(width: 8),
+                  const Expanded(
+                    child: Text(
+                      'Debes cerrar sesión para que los cambios se apliquen correctamente.',
+                      style: TextStyle(color: Colors.white70, fontSize: 13),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          ElevatedButton.icon(
+            onPressed: () async {
+              Navigator.pop(context); // Cerrar diálogo
+
+              // Cerrar sesión usando el provider
+              await ref.read(authNotifierProvider.notifier).logout();
+
+              // Navegar a login
+              if (mounted) {
+                Navigator.of(context).pushNamedAndRemoveUntil(
+                  '/login',
+                  (route) => false,
+                );
+              }
+            },
+            icon: const Icon(Icons.logout, size: 18),
+            label: const Text('Cerrar Sesión'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppConstants.primaryBlue,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   /// Mostrar notificación local cuando llega un nuevo incidente

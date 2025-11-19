@@ -269,7 +269,39 @@ class ApiAuthService {
       return null;
     }
   }
-  
+
+  /// Refrescar datos del usuario desde el servidor
+  /// Útil para actualizar cambios como nuevos permisos, organización, etc.
+  Future<User?> refreshUserData() async {
+    print('🔄 Refrescando datos del usuario desde servidor...');
+
+    try {
+      final response = await _apiService.get<Map<String, dynamic>>(
+        ApiConfig.me,
+        requiresAuth: true,
+      );
+
+      if (response.isSuccess && response.data != null) {
+        final userData = response.data!;
+        final user = _buildUserFromApiResponse(userData);
+
+        // Guardar con datos del backend para preservar campos como role y organization_id
+        await _saveUserData(user, backendData: userData);
+
+        print('✅ Datos de usuario actualizados: ${user.nombreCompleto}');
+        print('   - Rol: ${userData['role']}');
+        print('   - Organización ID: ${userData['organization_id']}');
+        return user;
+      }
+
+      print('⚠️ No se pudo refrescar datos del usuario');
+      return null;
+    } catch (e) {
+      print('❌ Error refrescando datos del usuario: $e');
+      return null;
+    }
+  }
+
   /// Refrescar token
   /// TODO: Implementar cuando el backend tenga endpoint /auth/refresh
   Future<bool> refreshToken() async {
@@ -599,25 +631,30 @@ Future<AuthResult> confirmPassword({
   Future<void> _saveUserData(User user, {Map<String, dynamic>? backendData}) async {
     final prefs = await SharedPreferences.getInstance();
 
-    // SIEMPRE usar el modelo User serializado para garantizar compatibilidad
-    // Esto asegura que al deserializar funcione correctamente con User.fromJson()
-    final userData = user.toJson();
+    // Usar datos del backend si están disponibles (tienen campos como 'role', 'organization_id')
+    // Si no, usar el modelo User serializado
+    Map<String, dynamic> userData;
+
+    if (backendData != null) {
+      // Combinar datos del backend con datos del modelo para tener lo mejor de ambos
+      userData = {
+        ...user.toJson(),
+        // Agregar/sobrescribir con campos del backend que la UI necesita
+        'role': backendData['role'],
+        'organization_id': backendData['organization_id'],
+        // Mantener id como String para compatibilidad con el modelo User
+        'id': backendData['id']?.toString() ?? user.id,
+      };
+      print('💾 Datos de usuario guardados (con datos del backend)');
+    } else {
+      userData = user.toJson();
+      print('💾 Datos de usuario guardados');
+    }
 
     await prefs.setString(
       AppConstants.userDataKey,
       json.encode(userData),
     );
-
-    // Si tenemos datos del backend, guardarlos aparte para referencia (opcional)
-    if (backendData != null) {
-      await prefs.setString(
-        '${AppConstants.userDataKey}_raw',
-        json.encode(backendData),
-      );
-      print('💾 Datos de usuario guardados (con respaldo del backend)');
-    } else {
-      print('💾 Datos de usuario guardados');
-    }
   }
   
   /// Obtener datos del usuario de SharedPreferences

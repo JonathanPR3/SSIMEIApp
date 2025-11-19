@@ -10,7 +10,7 @@ class Invitation {
   final DateTime expiresAt;
   final int createdByUserId;
   final String? createdByUserName;
-  final String? invitationLink;
+  final String? _backendInvitationLink;  // Link original del backend
 
   Invitation({
     required this.id,
@@ -21,11 +21,36 @@ class Invitation {
     required this.expiresAt,
     required this.createdByUserId,
     this.createdByUserName,
-    this.invitationLink,
-  });
+    String? invitationLink,
+  }) : _backendInvitationLink = invitationLink;
 
   bool get isActive => status == 'PENDING' && DateTime.now().isBefore(expiresAt);
   bool get isExpired => status == 'EXPIRED' || DateTime.now().isAfter(expiresAt);
+
+  /// Genera el link de invitación con el esquema ssimei:// para deep links en Android
+  /// Si hay token disponible, genera el link. Si no, usa el del backend.
+  String? get invitationLink {
+    // Si tenemos el token, generar el deep link correcto
+    if (token != null && token!.isNotEmpty) {
+      return 'ssimei://accept-invite?token=$token';
+    }
+
+    // Intentar extraer el token del link del backend y convertirlo
+    if (_backendInvitationLink != null) {
+      try {
+        final uri = Uri.parse(_backendInvitationLink!);
+        final tokenFromLink = uri.queryParameters['token'];
+        if (tokenFromLink != null && tokenFromLink.isNotEmpty) {
+          return 'ssimei://accept-invite?token=$tokenFromLink';
+        }
+      } catch (e) {
+        // Si falla el parseo, devolver el link original
+      }
+      return _backendInvitationLink;
+    }
+
+    return null;
+  }
 
   String get statusDisplay {
     if (isExpired) return 'Expirada';
@@ -92,7 +117,7 @@ class Invitation {
       'expires_at': expiresAt.toIso8601String(),
       'created_by_user_id': createdByUserId,
       'created_by_user_name': createdByUserName,
-      'invitation_link': invitationLink,
+      'invitation_link': _backendInvitationLink,
     };
   }
 }

@@ -40,12 +40,12 @@ class JoinRequest {
 
   String get userFullName => userLastName != null ? '$userName $userLastName' : userName;
 
-  bool get isPending => status == 'PENDING';
-  bool get isApproved => status == 'APPROVED';
-  bool get isRejected => status == 'REJECTED';
+  bool get isPending => status.toUpperCase() == 'PENDING';
+  bool get isApproved => status.toUpperCase() == 'APPROVED';
+  bool get isRejected => status.toUpperCase() == 'REJECTED';
 
   String get statusDisplay {
-    switch (status) {
+    switch (status.toUpperCase()) {
       case 'PENDING':
         return 'Pendiente';
       case 'APPROVED':
@@ -70,6 +70,23 @@ class JoinRequest {
   }
 
   factory JoinRequest.fromJson(Map<String, dynamic> json) {
+    // Manejar reviewed_by que puede ser int o objeto
+    int? reviewedByUserId;
+    String? reviewedByUserName;
+
+    final reviewedBy = json['reviewed_by'];
+    if (reviewedBy != null) {
+      if (reviewedBy is int) {
+        reviewedByUserId = reviewedBy;
+      } else if (reviewedBy is Map<String, dynamic>) {
+        reviewedByUserId = reviewedBy['user_id'];
+        reviewedByUserName = reviewedBy['name'] ?? reviewedBy['email'];
+      }
+    }
+    // También verificar campos alternativos
+    reviewedByUserId ??= json['reviewed_by_user_id'];
+    reviewedByUserName ??= json['reviewed_by_user_name'];
+
     return JoinRequest(
       id: json['id'] ?? json['request_id'],
       userId: json['user_id'],
@@ -79,8 +96,8 @@ class JoinRequest {
       createdAt: json['created_at'] != null
           ? DateTime.parse(json['created_at'])
           : DateTime.now(),
-      reviewedByUserId: json['reviewed_by_user_id'] ?? json['reviewed_by'],
-      reviewedByUserName: json['reviewed_by_user_name'],
+      reviewedByUserId: reviewedByUserId,
+      reviewedByUserName: reviewedByUserName,
       reviewedAt: json['reviewed_at'] != null
           ? DateTime.parse(json['reviewed_at'])
           : null,
